@@ -1,0 +1,1109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>창모 에러코드 배치표</title>
+<style>
+:root{
+  --bg:#f4f5f7;--panel:#fff;--line:#d9dce1;--line2:#eceef1;--text:#1d2129;--sub:#5f6672;--muted:#9aa0aa;
+  --accent:#2563eb;--accent-bg:#e8f0fe;--boss:#fde2e2;--boss-t:#9b1c1c;--hot:#fff4cc;--hot-b:#e8c34a;
+  --buff:#b45309;--warn:#dc2626;--ok:#15803d;--chip:#f7f8fa;
+  --a-fire:#fee2e2;--a-tree:#dcfce7;--a-shadow:#ede9fe;--a-crystal:#dbeafe;--a-light:#fef9c3;--a-none:#f1f5f9;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 "Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif}
+button,select,input,textarea{font:inherit;color:inherit}
+button{background:#fff;border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer;white-space:nowrap}
+button:hover{background:var(--chip)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary:hover{background:#1d4fd8}
+button.sm{padding:2px 7px;font-size:12px}
+select,input[type=text],input[type=number],textarea{border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:#fff}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header h1{font-size:16px;margin:0 8px 0 0}
+header .sp{flex:1}
+#seasonSel{max-width:360px}
+main{display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px;padding:14px 16px}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.side{display:flex;flex-direction:column;gap:12px;align-self:start;position:sticky;top:62px;max-height:calc(100vh - 76px);overflow:auto}
+.side h3{margin:0 0 6px;font-size:13px}
+.kv{font-size:12px;color:var(--sub);margin:3px 0}
+.kv b{color:var(--text);font-weight:600}
+.attr-chip{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;margin:1px 2px 1px 0;border:1px solid rgba(0,0,0,.06)}
+.pool-tools{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.pool-tools input[type=text]{flex:1;min-width:0}
+.grp{margin:8px 0 3px;font-size:11px;color:var(--sub);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{border:1px solid var(--line);border-radius:6px;padding:3px 7px;font-size:12px;cursor:grab;background:#fff;user-select:none}
+.chip:hover{border-color:var(--accent)}
+.chip.in{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.chip.other{color:var(--muted);text-decoration:line-through}
+.chip.na{border-style:dashed;color:var(--sub);background:#fafafa}
+.chip .star{color:var(--buff);font-weight:700}
+.chip .rnd{color:var(--buff);font-size:10px}
+#capture{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}
+.cap-head{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;border-bottom:2px solid var(--text);padding-bottom:8px;margin-bottom:10px}
+.cap-head .t{font-size:17px;font-weight:700}
+.cap-head .s{font-size:12px;color:var(--sub)}
+.cap-head input{border:none;padding:0;font-size:17px;font-weight:700;min-width:200px;flex:1;background:transparent}
+.block{border:1px solid var(--line);border-radius:8px;margin-bottom:12px;overflow:hidden}
+.block.active{outline:2px solid var(--accent);outline-offset:-1px}
+.bhead{display:flex;align-items:center;gap:8px;background:#f1f3f6;padding:6px 10px;border-bottom:1px solid var(--line)}
+.bhead .deckno{font-weight:700;font-size:14px}
+.bhead input.label{border:none;background:transparent;font-weight:700;font-size:14px;width:120px;padding:0}
+.bhead .tools{margin-left:auto;display:flex;gap:4px;align-items:center}
+.bhead .cnt{font-size:12px;color:var(--sub)}
+.bhead .dup{color:var(--warn);font-size:12px;font-weight:600}
+.bbody{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;padding:10px}
+@media(max-width:1200px){.bbody{grid-template-columns:1fr}}
+.board{display:grid;grid-template-columns:repeat(7,46px);grid-template-rows:repeat(5,46px);gap:3px}
+.cell{border:1px solid var(--line2);border-radius:5px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11.5px;line-height:1.15;padding:2px;position:relative;background:#fff;word-break:keep-all;overflow:hidden}
+.cell.seat-front{background:var(--hot);border-color:var(--hot-b)}
+.cell.seat-side{background:#e9f7ef;border-color:#86c99f}
+.cell.void{border:1px dashed #eef0f3;background:transparent}
+.cell.on.bad{border:2px dashed var(--warn);background:#fff;color:var(--warn)}
+.cell.on{background:var(--accent-bg);border-color:var(--accent);color:#1e3a8a;font-weight:600;cursor:grab}
+.cell.on.buffed{box-shadow:inset 0 0 0 2px #f59e0b}
+.cell.on.conflict{border-color:var(--warn);background:#fee2e2;color:var(--warn)}
+.cell.over{outline:2px dashed var(--accent)}
+.cell .x{position:absolute;top:0;right:1px;font-size:10px;color:var(--muted);cursor:pointer;display:none;line-height:1}
+.cell:hover .x{display:block}
+.boss{grid-column:3/6;grid-row:1/3;background:var(--boss);color:var(--boss-t);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.memo{margin-top:6px;width:334px;min-height:44px;resize:vertical;font-size:12px;border-color:var(--line2)}
+table.lo{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+table.lo th{background:#f7f8fa;color:var(--sub);font-weight:600;padding:4px 3px;border:1px solid var(--line2);text-align:center}
+table.lo td{border:1px solid var(--line2);padding:0;height:30px}
+table.lo td.nm{padding:0 5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.lo td.ord{text-align:center;color:var(--sub)}
+table.lo input,table.lo select{border:none;border-radius:0;width:100%;height:29px;padding:0 4px;background:transparent;font-size:12px}
+table.lo input:focus,table.lo select:focus{outline:2px solid var(--accent);outline-offset:-2px;background:#fff}
+.cellbtn{border:none;border-radius:0;background:transparent;width:100%;height:29px;padding:0 4px;text-align:left;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.cellbtn:hover{background:var(--accent-bg)}
+.cellbtn.wrap{white-space:normal;height:auto;min-height:29px;padding:4px;line-height:1.3;word-break:keep-all}
+.cellbtn .ph{color:var(--muted)}
+table.lo .bar{height:8px;background:var(--accent);border-radius:2px;margin:0 4px}
+table.lo tr.total td{background:#f7f8fa;font-weight:600;padding:0 5px}
+.ordbtn{border:none;background:none;padding:0 1px;cursor:pointer;color:var(--muted);font-size:10px}
+.ordbtn:hover{color:var(--accent)}
+.empty{color:var(--muted);text-align:center;padding:10px!important}
+.addrow{display:flex;gap:6px;margin-top:4px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;z-index:50;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1}
+.toast.warn{background:var(--warn)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:40}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:10px;padding:16px;width:min(860px,94vw);max-height:86vh;overflow:auto}
+.modal.wide{width:min(1180px,96vw);height:88vh;max-height:88vh;display:flex;flex-direction:column;padding:0;overflow:hidden}
+.cm-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.cm-head h2{margin:0}
+.cm-body{flex:1;display:grid;grid-template-columns:290px minmax(0,1fr);min-height:0}
+.cm-left{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.cm-tools{padding:10px;display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--line2)}
+.cm-tools input,.cm-tools select{width:100%}
+.cm-list{flex:1;overflow:auto}
+.cm-item{display:flex;align-items:center;gap:6px;padding:6px 10px;border-bottom:1px solid var(--line2);cursor:pointer}
+.cm-item:hover{background:var(--chip)}
+.cm-item.sel{background:var(--accent-bg)}
+.cm-item .nm{flex:1;min-width:0}
+.cm-item .nm b{display:block;font-size:13px}
+.cm-item .nm span{display:block;font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cm-item .dot{width:9px;height:9px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.15)}
+.cm-item .miss{font-size:10px;color:var(--warn);white-space:nowrap}
+.cm-item.hid .nm b{color:var(--muted);text-decoration:line-through}
+.cm-right{overflow:auto;padding:14px 18px}
+.cm-sec{border:1px solid var(--line2);border-radius:8px;padding:10px 12px;margin-bottom:12px}
+.cm-sec h3{margin:0 0 8px;font-size:13px;display:flex;align-items:center;gap:8px}
+.cm-sec h3 .src{font-weight:400;font-size:11px;color:var(--sub)}
+.cm-grid{display:grid;grid-template-columns:90px minmax(0,1fr);gap:6px 10px;align-items:center}
+.cm-grid label{color:var(--sub);font-size:12px}
+.tag{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:12px;padding:2px 4px 2px 9px;font-size:12px;margin:2px 4px 2px 0;background:#fff}
+.tag button{border:none;background:none;padding:0 3px;color:var(--muted);cursor:pointer;font-size:11px}
+.tag button:hover{color:var(--warn)}
+.tagadd{width:130px;font-size:12px;padding:2px 6px}
+.tier-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:4px}
+.tier-row .tl{width:44px;color:var(--sub);font-size:12px;padding-top:4px}
+.cm-foot{display:flex;align-items:center;gap:8px;padding:10px 16px;border-top:1px solid var(--line)}
+.cm-foot .dirty{color:var(--warn);font-size:12px}
+.sk-table{width:100%;border-collapse:collapse;font-size:12px}
+.sk-table td,.sk-table th{border-bottom:1px solid var(--line2);padding:3px 4px;text-align:left}
+.sk-table input,.sk-table select{width:100%;font-size:12px;padding:2px 4px}
+.sk-table .mv{border:none;background:none;color:var(--muted);cursor:pointer;padding:0 2px}
+.cm-empty{color:var(--muted);padding:40px;text-align:center}
+.modal h2{font-size:15px;margin:0 0 10px}
+.modal table{width:100%;border-collapse:collapse;font-size:12px}
+.modal td,.modal th{border-bottom:1px solid var(--line2);padding:4px;text-align:left}
+.modal .foot{display:flex;justify-content:flex-end;gap:6px;margin-top:12px}
+.hint{font-size:11.5px;color:var(--sub)}
+.legend{display:flex;gap:10px;font-size:11px;color:var(--sub);margin-top:6px;flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px;background:var(--c);border:1px solid var(--b,transparent)}
+.capturing .noprint{display:none!important}
+.capturing .cell .x{display:none!important}
+.capturing .cell.void{border-color:transparent}
+.capturing #capture{border:none;width:1320px}
+.capturing .memo.blank{display:none}
+.capturing .bbody{grid-template-columns:auto minmax(0,1fr)}
+</style>
+</head>
+<body>
+<header>
+  <h1>창모 에러코드 배치표</h1>
+  <select id="seasonSel" title="공지에서 가져온 에러코드 시즌"></select>
+  <button id="btnCustomSeason" title="공지가 아직 없을 때 직접 시즌을 만듭니다">+ 직접 시즌</button>
+  <button id="btnCopyPrev">지난 배치 가져오기</button>
+  <span class="sp"></span>
+  <button id="btnCopyImg" class="primary">이미지 복사</button>
+  <button id="btnPng">PNG 저장</button>
+  <button id="btnXlsx">엑셀 저장</button>
+  <button id="btnChars">캐릭터 관리</button>
+  <button id="btnBackup">백업/복원</button>
+</header>
+
+<main>
+  <aside class="side">
+    <div class="card" id="seasonInfo"></div>
+    <div class="card">
+      <h3>캐릭터 풀</h3>
+      <div class="pool-tools">
+        <input type="text" id="poolSearch" placeholder="이름 검색">
+        <label class="hint"><input type="checkbox" id="poolAllowedOnly"> 입장 가능 속성만</label>
+      </div>
+      <div class="hint">클릭하면 선택된 덱의 빈 자리(정면 → 양옆 순)에 들어가고, 끌어서 원하는 칸에 놓을 수도 있어요.</div>
+      <div id="pool"></div>
+    </div>
+  </aside>
+
+  <section>
+    <div id="capture">
+      <div class="cap-head">
+        <input id="capTitle" type="text" spellcheck="false">
+        <span class="s" id="capSub"></span>
+      </div>
+      <div id="blocks"></div>
+      <div class="addrow noprint">
+        <button id="addDeck1">+ 1덱 대안 추가</button>
+        <button id="addDeck2">+ 2덱 대안 추가</button>
+      </div>
+      <div class="legend noprint">
+        <span style="--c:var(--boss)">보스</span>
+        <span style="--c:var(--hot);--b:var(--hot-b)">정면 자리</span>
+        <span style="--c:#e9f7ef;--b:#86c99f">양옆 자리</span>
+        <span style="--c:var(--accent-bg);--b:var(--accent)">배치됨</span>
+        <span style="--c:#fee2e2;--b:var(--warn)">1덱·2덱 중복</span>
+      </div>
+    </div>
+    <p class="hint" id="dataInfo"></p>
+  </section>
+</main>
+
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script src="seed.js"></script>
+<script src="skills.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script>
+"use strict";
+const DATA = window.GENESIS_DATA || { characters: [], weapons: [], armors: [], accessories: [], seasons: [] };
+const STORE_KEY = 'genesis-deck-tool-v1';
+const ROWS = 5, COLS = 7, MAX_PER_DECK = 6;
+const BOSS_CELLS = [[0,2],[0,3],[0,4],[1,2],[1,3],[1,4]];
+// 보스별 배치 가능 자리 (행,열). 보스는 위쪽 가운데 3x2, 열 0~1 = 왼쪽, 5~6 = 오른쪽, 2~4 = 정면
+const grid = (rows, cols) => rows.flatMap(r => cols.map(c => [r, c]));
+const SEATS = {
+  // 양옆: 보스 아래쪽 행에 2칸씩(4자리) / 정면: 3칸 x 3행(9자리) → 13자리
+  '디에네': { side: grid([1], [0, 1, 5, 6]), front: grid([2, 3, 4], [2, 3, 4]) },
+  // 양옆: 2칸 x 2행씩(8자리) / 정면: 3칸 x 2행(6자리) → 14자리
+  '아수라': { side: grid([0, 1], [0, 1, 5, 6]), front: grid([2, 3], [2, 3, 4]) },
+};
+const HOT = SEATS;  // 보스 목록용
+function seatType(boss, r, c) {
+  const s = SEATS[boss]; if (!s) return '';
+  if (s.front.some(([a, d]) => a === r && d === c)) return 'front';
+  if (s.side.some(([a, d]) => a === r && d === c)) return 'side';
+  return '';
+}
+const seatKeys = boss => SEATS[boss] ? [...SEATS[boss].front, ...SEATS[boss].side].map(([r, c]) => r + ',' + c) : [];
+const ATTRS = ['자유의 불꽃','활력의 나무','욕망의 그림자','지성의 결정체','신념의 빛'];
+const ATTR_COLOR = {'자유의 불꽃':'--a-fire','활력의 나무':'--a-tree','욕망의 그림자':'--a-shadow','지성의 결정체':'--a-crystal','신념의 빛':'--a-light'};
+const AI_OPTS = ['지원','균형','공격'];
+const FIELDS = [
+  ['ai','AI',52],['cls','클래스',96],['skill','스킬',180],['weapon','무기',80],['armor','방어구',90],
+  ['acc','악세',72],['art','아티팩트',110],['note','비고',120],['dmg','딜',70],
+];
+// 자주 쓰는 줄임말 → 공지상의 정식 이름 (캐릭터 관리에서 바꿀 수 있음)
+const DEFAULT_NICK = {
+  '헬카이트':'헬카','벨제부르':'벨제','다이커스 록우드':'다이커스','알테어 유스티나 카이엔':'알테어','전쟁의 샤크바리':'샤크',
+  '음모의 베라모드':'베라','시라노 번스타인':'시라노','리델 하트':'리델','이자벨 리피네':'이자벨','하이델룬':'하델',
+  '기쉬네 드리포드':'기쉬네','앤 밀레니엄':'앤','수제자 쿤 그리어':'수쿤','마녀 카메오 보포트':'꼬메오','제인 쇼어':'제인',
+  '빈센트 번스타인':'번스','사령관 사이렌 우드빌':'사이렌','메르세데스 프레데릭':'메르세데스','알프레드 프레데릭':'알프레드',
+  '카나 밀라노비치':'카나','파멸의 유스타시아':'유스','회색기사단 G.S':'G.S','절대의 프라이오스':'프라이오스','속죄의 이올린':'이올린',
+  '체사레 보르자':'체사레','천마 천여운':'천마','소교주 천여운':'소교주','용살자 제피르':'용제피르','투신 제피르':'투신',
+  '성왕 라시드 팬드래건':'성왕','정의의 디에네':'정디에네','혼돈의 데이모스':'데이모스','크리스티나 여제':'여제','바다의 이스킨데룬':'이스킨',
+};
+
+/* ---------------- 상태 ---------------- */
+let S = load();
+let activeBlock = 0;
+
+function blankState() {
+  return { v: 2, currentSeason: null, plans: {}, history: {}, charMeta: {}, customChars: [], customSeasons: [], skillsExtra: {} };
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) return migrate(Object.assign(blankState(), JSON.parse(raw)));
+  } catch (e) {}
+  const st = blankState();
+  if (window.GENESIS_SEED) Object.assign(st, JSON.parse(JSON.stringify(window.GENESIS_SEED)));
+  return st;
+}
+// 예전 버전이 엑셀 줄임말로 임의로 만들었던 캐릭터(투싸·퐁퐁·찌)를 저장 데이터에서 걷어냄
+function migrate(st) {
+  if ((st.v || 1) < 2) {
+    const junk = ['투싸', '퐁퐁', '찌', '회색의 G.S'];
+    st.customChars = (st.customChars || []).filter(c => !junk.includes(c.name));
+    for (const n of junk) { delete st.charMeta[n]; delete st.history[n]; }
+    for (const p of Object.values(st.plans || {})) for (const b of p.blocks) {
+      for (const k of Object.keys(b.cells)) if (junk.includes(b.cells[k])) delete b.cells[k];
+      b.order = b.order.filter(n => !junk.includes(n));
+      for (const n of junk) delete b.rows[n];
+    }
+    st.v = 2;
+  }
+  return st;
+}
+let saveTimer = null;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) { toast('브라우저 저장에 실패했어요. 백업 파일로 저장해 두세요.', true); }
+  }, 250);
+}
+
+/* ---------------- 데이터 헬퍼 ---------------- */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// 클래스 목록: 3차 클래스가 있으면 그것만, 없으면 전체
+const classesOf = tiers => { const t3 = Object.keys(tiers || {}).filter(k => /3/.test(k)).flatMap(k => tiers[k]); return t3.length ? t3 : Object.values(tiers || {}).flat(); };
+function allChars(withMeta = true) {
+  const map = new Map();
+  for (const c of DATA.characters) map.set(c.name, Object.assign({}, c));
+  for (const c of S.customChars) if (!map.has(c.name)) map.set(c.name, Object.assign({ classes: [], artifacts: [], weapon: '', custom: true }, c));
+  // 공지에 속성이 없는 초기 캐릭터는 나무위키에서 모은 속성으로 채움 (라시드 팬드래건(청년) ← 라시드 팬드래건)
+  const nAttrs = (window.GENESIS_SKILLS || {}).attrs || {};
+  for (const c of map.values()) if (!c.attr) {
+    const k = nAttrs[c.name] ? c.name : Object.keys(nAttrs).filter(x => c.name.startsWith(x)).sort((a, b) => b.length - a.length)[0];
+    if (k) c.attr = nAttrs[k];
+  }
+  // 전직 트리도 공지에 없으면 나무위키 값으로
+  const nTiers = (window.GENESIS_SKILLS || {}).tiers || {};
+  for (const c of map.values()) if (!Object.values(c.tiers || {}).flat().length) {
+    const k = nTiers[c.name] ? c.name : Object.keys(nTiers).filter(x => c.name.startsWith(x)).sort((a, b) => b.length - a.length)[0];
+    if (k) { c.tiers = nTiers[k]; c.classes = classesOf(nTiers[k]); c.tiersFrom = 'namu'; }
+  }
+  if (!withMeta) return map;
+  // 캐릭터 관리에서 직접 고친 값이 공지/나무위키 값보다 우선
+  for (const [n, m] of Object.entries(S.charMeta)) {
+    const c = map.get(n); if (!c) continue;
+    if (m.attr) c.attr = m.attr;
+    if (m.tiers) { c.tiers = m.tiers; c.classes = classesOf(m.tiers); }
+    if (m.artifacts) c.artifacts = m.artifacts;
+    if (m.weapon != null) c.weapon = m.weapon;
+    c.hidden = !!m.hidden;
+  }
+  return map;
+}
+let CHARS = allChars();
+const nick = n => (S.charMeta[n] && S.charMeta[n].nick) || DEFAULT_NICK[n] || n;
+
+function seasonList() {
+  const list = DATA.seasons.map(s => Object.assign({}, s, { label: `[${s.mode === '기사단' ? '기사단' : '개인'}] ${s.boss} ${s.season || ''} · ${fmtDate(s.postDate)} 공지` }));
+  for (const c of S.customSeasons) list.push(Object.assign({ allowed: [], buffChars: [], randomBuffChars: [] }, c, { label: `[직접] ${c.name}` }));
+  return list;
+}
+const fmtDate = d => d ? `${d.slice(2,4)}.${d.slice(4,6)}.${d.slice(6,8)}` : '';
+function curSeason() {
+  const list = seasonList();
+  return list.find(s => s.key === S.currentSeason) || list.find(s => s.mode === '기사단') || list[0] || null;
+}
+function newBlock(deck, label, boss) {
+  return { deck, label, boss, cells: {}, order: [], rows: {}, memo: '' };
+}
+function curPlan() {
+  const s = curSeason(); if (!s) return null;
+  if (!S.plans[s.key]) {
+    const t = `${s.mode === '기사단' ? '기사단 ' : ''}에러코드 ${s.boss} ${s.season || ''} 추천덱`.trim();
+    S.plans[s.key] = { title: t, blocks: [newBlock(1, '1안', s.boss), newBlock(2, '', s.boss)], updated: Date.now() };
+  }
+  return S.plans[s.key];
+}
+function charsInDeck(plan, deck, exceptIdx) {
+  const set = new Set();
+  plan.blocks.forEach((b, i) => { if (b.deck === deck && i !== exceptIdx) b.order.forEach(n => set.add(n)); });
+  return set;
+}
+
+/* ---------------- 렌더링 ---------------- */
+function render() {
+  CHARS = allChars();
+  renderSeasonSel(); renderSeasonInfo(); renderPool(); renderBlocks();
+  const d = DATA.generatedAt ? `공지 데이터: ${DATA.generatedAt} 기준 · 게시글 ${DATA.postCount}건 · 캐릭터 ${DATA.characters.length}명` : 'data.js 가 없어요. update-data.bat 를 먼저 실행하세요.';
+  document.getElementById('dataInfo').textContent = d + ' · 새 공지가 올라오면 update-data.bat 실행 후 새로고침';
+}
+function renderSeasonSel() {
+  const sel = document.getElementById('seasonSel'), s = curSeason();
+  sel.innerHTML = seasonList().map(x => `<option value="${esc(x.key)}"${s && x.key === s.key ? ' selected' : ''}>${esc(x.label)}</option>`).join('');
+}
+function attrChip(a) { return `<span class="attr-chip" style="background:var(${ATTR_COLOR[a] || '--a-none'})">${esc(a || '미지정')}</span>`; }
+function renderSeasonInfo() {
+  const s = curSeason(), el = document.getElementById('seasonInfo');
+  if (!s) { el.innerHTML = '<div class="hint">시즌 정보가 없어요.</div>'; return; }
+  const names = a => (a || []).map(n => esc(nick(n))).join(', ') || '-';
+  el.innerHTML = `<h3>${esc(s.label)}</h3>
+    <div class="kv"><b>보스</b> ${esc(s.boss)} ${s.postId ? `· <a href="https://game.naver.com/lounge/theplayofgenesis/board/detail/${s.postId}" target="_blank">공지 보기</a>` : ''}</div>
+    <div class="kv"><b>입장 속성</b><br>${(s.allowed || []).map(attrChip).join('') || '-'}</div>
+    <div class="kv"><b>버프/디버프</b> ${esc(s.buffDebuff || '-')}</div>
+    <div class="kv"><b>일정</b> ${esc(s.schedule || '-')}</div>`;
+}
+function renderPool() {
+  const s = curSeason(), plan = curPlan(), el = document.getElementById('pool');
+  if (!plan) { el.innerHTML = ''; return; }
+  const q = document.getElementById('poolSearch').value.trim();
+  const onlyAllowed = document.getElementById('poolAllowedOnly').checked && s && s.allowed && s.allowed.length;
+  const ab = plan.blocks[activeBlock] || plan.blocks[0];
+  const inActive = new Set(ab ? ab.order : []);
+  const otherDeck = ab ? charsInDeck(plan, ab.deck === 1 ? 2 : 1, -1) : new Set();
+  const buff = new Set(), rnd = new Set();  // 버프/랜덤 표시는 쓰지 않음
+  const groups = {};
+  for (const c of CHARS.values()) {
+    if (c.hidden) continue;
+    if (q && !(c.name.includes(q) || nick(c.name).includes(q))) continue;
+    const a = c.attr || '';
+    if (onlyAllowed && a && !s.allowed.includes(a)) continue;
+    (groups[a] = groups[a] || []).push(c);
+  }
+  const order = [...(s && s.allowed ? s.allowed : []), ...ATTRS.filter(a => !(s && s.allowed || []).includes(a)), ''];
+  let h = '';
+  for (const a of order) {
+    const g = groups[a]; if (!g || !g.length) continue;
+    g.sort((x, y) => (buff.has(y.name) - buff.has(x.name)) || (rnd.has(y.name) - rnd.has(x.name)) || nick(x.name).localeCompare(nick(y.name), 'ko'));
+    const notAllowed = a && s && s.allowed && s.allowed.length && !s.allowed.includes(a);
+    h += `<div class="grp">${a ? attrChip(a) + (notAllowed ? ' <span class="hint">이번 시즌 입장 불가 · 버프 캐릭터로 쓸 때만</span>' : '') : '속성 미지정 <span class="hint">(캐릭터 관리에서 속성을 정해 주세요)</span>'}</div><div class="chips">`;
+    for (const c of g) {
+      const cls = (inActive.has(c.name) ? 'in' : otherDeck.has(c.name) ? 'other' : '') + (notAllowed ? ' na' : '');
+      const title = `${c.name}${c.attr ? ' · ' + c.attr : ''}${otherDeck.has(c.name) ? ' · 다른 덱에서 사용 중' : ''}`;
+      h += `<span class="chip ${cls}" draggable="true" data-char="${esc(c.name)}" title="${esc(title)}">${buff.has(c.name) ? '<span class="star">★</span>' : ''}${esc(nick(c.name))}${rnd.has(c.name) ? ' <span class="rnd">랜덤</span>' : ''}</span>`;
+    }
+    h += '</div>';
+  }
+  el.innerHTML = h || '<div class="hint" style="margin-top:8px">조건에 맞는 캐릭터가 없어요.</div>';
+}
+
+// 지금까지 저장된 모든 배치의 장비 행 [{char, row}]
+function allRows() {
+  const out = [];
+  for (const p of Object.values(S.plans)) for (const b of p.blocks) for (const [n, r] of Object.entries(b.rows)) if (r) out.push({ char: n, row: r });
+  return out;
+}
+// 입력 칸 자동완성: 이 캐릭터가 쓰던 값 → 다른 캐릭터가 쓰던 값 → 공지 데이터 순
+function suggestions(field, charName) {
+  const c = CHARS.get(charName) || {}, mine = [], others = [], base = [];
+  for (const { char, row } of allRows()) if (row[field]) (char === charName ? mine : others).push(row[field]);
+  if (S.history[charName] && S.history[charName][field]) mine.unshift(S.history[charName][field]);
+  if (field === 'cls') { (c.classes || []).forEach(x => base.push(x)); Object.values(c.tiers || {}).flat().forEach(x => base.push(x)); }
+  if (field === 'weapon') { base.push('전무'); if (c.weapon) base.push(c.weapon); }
+  if (field === 'armor') DATA.armors.forEach(a => base.push(a.name + ' 4셋'));
+  if (field === 'acc') DATA.accessories.forEach(a => base.push(a.name));
+  if (field === 'art') (DATA.artifacts || []).forEach(x => base.push(x));
+  const list = field === 'cls' ? [...base, ...mine, ...others] : [...mine, ...others, ...base];
+  return [...new Set(list.filter(Boolean))].slice(0, 120);
+}
+const splitSkills = s => String(s || '').split(/[\/,·]/).map(x => x.trim()).filter(Boolean);
+function countSkills(filter) {
+  const m = new Map();
+  for (const { char, row } of allRows()) if (filter(char, row)) for (const t of splitSkills(row.skill)) m.set(t, (m.get(t) || 0) + 1);
+  return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([t]) => t);
+}
+
+function renderBlocks() {
+  const plan = curPlan(), s = curSeason(), el = document.getElementById('blocks');
+  if (!plan) { el.innerHTML = '<div class="hint">왼쪽 위에서 시즌을 고르세요.</div>'; return; }
+  if (activeBlock >= plan.blocks.length) activeBlock = 0;
+  document.getElementById('capTitle').value = plan.title || '';
+  document.getElementById('capSub').textContent = s ? [s.allowed && s.allowed.length ? '입장: ' + s.allowed.join(' · ') : '', s.buffDebuff || ''].filter(Boolean).join('  |  ') : '';
+  const buff = new Set();  // 버프 표시는 쓰지 않음
+  let h = '';
+  plan.blocks.forEach((b, bi) => {
+    const other = charsInDeck(plan, b.deck === 1 ? 2 : 1, -1);
+    const dups = b.order.filter(n => other.has(n));
+    const seats = new Set(seatKeys(b.boss));
+    const outside = Object.keys(b.cells).filter(k => !seats.has(k)).map(k => b.cells[k]);
+    h += `<div class="block${bi === activeBlock ? ' active' : ''}" data-block="${bi}">
+      <div class="bhead">
+        <span class="deckno">${b.deck}덱</span>
+        <input class="label" data-f="label" value="${esc(b.label)}" placeholder="(1안/2안)">
+        <span class="cnt">${b.order.length}/${MAX_PER_DECK}명</span>
+        ${dups.length ? `<span class="dup">중복: ${dups.map(n => esc(nick(n))).join(', ')}</span>` : ''}
+        ${outside.length ? `<span class="dup">자리 밖: ${outside.map(n => esc(nick(n))).join(', ')} (옮겨 주세요)</span>` : ''}
+        <span class="tools noprint">
+          <select data-f="boss" title="보스 배치 템플릿">${Object.keys(HOT).map(k => `<option${k === b.boss ? ' selected' : ''}>${k}</option>`).join('')}</select>
+          <button class="sm" data-act="up" title="위로">▲</button><button class="sm" data-act="down" title="아래로">▼</button>
+          <button class="sm" data-act="dup" title="이 블록 복제(대안 만들기)">복제</button>
+          <button class="sm" data-act="clear" title="배치 비우기">비우기</button>
+          <button class="sm" data-act="del" title="블록 삭제">삭제</button>
+        </span>
+      </div>
+      <div class="bbody">
+        <div>
+          <div class="board">`;
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      if (BOSS_CELLS.some(([a, d]) => a === r && d === c)) {
+        if (r === 0 && c === 2) h += `<div class="boss">${esc(b.boss)}</div>`;
+        continue;
+      }
+      const k = r + ',' + c, n = b.cells[k], seat = seatType(b.boss, r, c);
+      if (!seat && !n) { h += `<div class="cell void" style="grid-row:${r + 1};grid-column:${c + 1}"></div>`; continue; }
+      const cls = ['cell', n ? 'on' : seat ? 'seat-' + seat : '', n && !seat ? 'bad' : '', n && buff.has(n) ? 'buffed' : '', n && other.has(n) ? 'conflict' : ''].join(' ');
+      const title = n ? (seat ? n : `${n} · ${b.boss}에서는 놓을 수 없는 자리예요`) : '';
+      h += `<div class="${cls}" style="grid-row:${r + 1};grid-column:${c + 1}" data-cell="${k}"${seat ? ' data-seat="1"' : ''}${n ? ` draggable="true" title="${esc(title)}"` : ''}>${n ? esc(nick(n)) + '<span class="x" data-act="rm" title="빼기">✕</span>' : ''}</div>`;
+    }
+    h += `</div><textarea class="memo" data-f="memo">${esc(b.memo)}</textarea></div>
+        <div style="overflow-x:auto"><table class="lo"><colgroup><col style="width:34px"><col style="width:70px">${FIELDS.map(f => `<col style="width:${f[2]}px">`).join('')}<col style="width:70px"></colgroup>
+          <tr><th>순서</th><th>캐릭터</th>${FIELDS.map(f => `<th>${f[1]}</th>`).join('')}<th>그래프</th></tr>`;
+    const maxD = Math.max(1, ...b.order.map(n => +((b.rows[n] || {}).dmg) || 0));
+    let total = 0;
+    if (!b.order.length) h += `<tr><td colspan="${FIELDS.length + 3}" class="empty">캐릭터를 배치하면 지난번 장비 세팅이 자동으로 채워져요</td></tr>`;
+    b.order.forEach((n, i) => {
+      const row = b.rows[n] || (b.rows[n] = {});
+      total += +row.dmg || 0;
+      h += `<tr data-char="${esc(n)}"><td class="ord">${i + 1}<span class="noprint"><button class="ordbtn" data-act="rup">▲</button><button class="ordbtn" data-act="rdown">▼</button></span></td>
+        <td class="nm" title="${esc(n)}">${buff.has(n) ? '<span style="color:var(--buff)">★</span>' : ''}${esc(nick(n))}</td>`;
+      for (const [f] of FIELDS) {
+        if (f === 'ai') h += `<td><select data-row="${f}">${['', ...AI_OPTS].map(o => `<option${o === (row.ai || '') ? ' selected' : ''}>${o}</option>`).join('')}</select></td>`;
+        else if (f === 'dmg') h += `<td><input type="number" data-row="dmg" value="${esc(row.dmg || '')}" style="text-align:right"></td>`;
+        else if (f === 'skill') h += `<td><button class="cellbtn wrap" data-act="skill" title="${esc(row.skill || '')}">${row.skill ? esc(row.skill) : '<span class="ph">스킬 선택</span>'}</button></td>`;
+        else if (f === 'cls' && Object.keys((CHARS.get(n) || {}).tiers || {}).length) {
+          // 공지의 전직트리에서 고르기 (3차 → 2차 → 1차), 예전 줄임말 값은 그대로 보여 줌
+          const tiers = CHARS.get(n).tiers, cur = row.cls || '';
+          const keys = Object.keys(tiers).sort().reverse();
+          const all = keys.flatMap(k => tiers[k]);
+          h += `<td><select data-row="cls"><option value=""></option>${cur && !all.includes(cur) ? `<option selected>${esc(cur)}</option>` : ''}${keys.map(k => `<optgroup label="${esc(k)}">${tiers[k].map(o => `<option${o === cur ? ' selected' : ''}>${esc(o)}</option>`).join('')}</optgroup>`).join('')}<option value="__custom">직접 입력…</option></select></td>`;
+        }
+        else if (f === 'art' && (CHARS.get(n) || {}).artifacts && CHARS.get(n).artifacts.length) {
+          // 공지에 나온 이 캐릭터의 아티팩트만 고르기 (예전 줄임말 값은 그대로 보여 줌)
+          const arts = CHARS.get(n).artifacts, cur = row.art || '';
+          const opts = ['', ...arts, ...(cur && !arts.includes(cur) ? [cur] : [])];
+          h += `<td><select data-row="art">${opts.map(o => `<option value="${esc(o)}"${o === cur ? ' selected' : ''}>${esc(o)}</option>`).join('')}<option value="__custom">직접 입력…</option></select></td>`;
+        }
+        else h += `<td><input type="text" data-row="${f}" value="${esc(row[f] || '')}" list="dl-${bi}-${i}-${f}"><datalist id="dl-${bi}-${i}-${f}">${suggestions(f, n).map(v => `<option value="${esc(v)}">`).join('')}</datalist></td>`;
+      }
+      h += `<td><div class="bar" style="width:${Math.round(((+row.dmg || 0) / maxD) * 100)}%"></div></td></tr>`;
+    });
+    if (b.order.length) h += `<tr class="total"><td colspan="${FIELDS.length + 1}" style="text-align:right">합계</td><td style="text-align:right">${total ? total.toLocaleString() : ''}</td><td></td></tr>`;
+    h += `</table></div></div></div>`;
+  });
+  el.innerHTML = h;
+}
+
+/* ---------------- 배치 동작 ---------------- */
+function touch() { const p = curPlan(); if (p) p.updated = Date.now(); save(); }
+function placeChar(bi, name, key) {
+  const plan = curPlan(), b = plan.blocks[bi]; if (!b) return;
+  const other = charsInDeck(plan, b.deck === 1 ? 2 : 1, -1);
+  if (!b.order.includes(name) && b.order.length >= MAX_PER_DECK) { toast(`한 덱은 최대 ${MAX_PER_DECK}명이에요`, true); return; }
+  if (!key) {
+    if (b.order.includes(name)) return;
+    key = seatKeys(b.boss).find(k => !b.cells[k]);   // 정면 → 양옆 순으로 빈 자리
+    if (!key) { toast('빈 자리가 없어요', true); return; }
+  } else if (!seatKeys(b.boss).includes(key)) { toast(`${b.boss}에서는 놓을 수 없는 자리예요`, true); return; }
+  const prevKey = Object.keys(b.cells).find(k => b.cells[k] === name);
+  const occupant = b.cells[key];
+  if (prevKey) { delete b.cells[prevKey]; if (occupant && occupant !== name) b.cells[prevKey] = occupant; }
+  else if (occupant) { removeFromBlock(b, occupant); }
+  b.cells[key] = name;
+  if (!b.order.includes(name)) {
+    b.order.push(name);
+    if (!b.rows[name] || !Object.keys(b.rows[name]).length) b.rows[name] = Object.assign({}, S.history[name] || { weapon: '전무' });
+  }
+  if (other.has(name)) toast(`${nick(name)}은(는) 다른 덱에도 있어요`, true);
+  touch(); render();
+}
+function removeFromBlock(b, name) {
+  for (const k of Object.keys(b.cells)) if (b.cells[k] === name) delete b.cells[k];
+  b.order = b.order.filter(n => n !== name);
+  delete b.rows[name];
+}
+function moveCell(fromBi, fromKey, toBi, toKey) {
+  const plan = curPlan(), A = plan.blocks[fromBi], B = plan.blocks[toBi];
+  const n = A.cells[fromKey]; if (!n) return;
+  if (!seatKeys(B.boss).includes(toKey)) { toast(`${B.boss}에서는 놓을 수 없는 자리예요`, true); return; }
+  if (fromBi === toBi) {
+    const occ = A.cells[toKey];
+    delete A.cells[fromKey]; if (occ) A.cells[fromKey] = occ;
+    A.cells[toKey] = n; touch(); render(); return;
+  }
+  const row = A.rows[n];
+  removeFromBlock(A, n);
+  placeChar(toBi, n, toKey);
+  if (row) { B.rows[n] = row; touch(); render(); }
+}
+
+/* ---------------- 이벤트 ---------------- */
+const $ = id => document.getElementById(id);
+$('seasonSel').onchange = e => { S.currentSeason = e.target.value; activeBlock = 0; save(); render(); };
+$('poolSearch').oninput = renderPool;
+$('poolAllowedOnly').onchange = renderPool;
+$('capTitle').oninput = e => { curPlan().title = e.target.value; touch(); };
+$('addDeck1').onclick = () => addBlock(1);
+$('addDeck2').onclick = () => addBlock(2);
+function addBlock(deck) {
+  const plan = curPlan(), s = curSeason();
+  const n = plan.blocks.filter(b => b.deck === deck).length;
+  plan.blocks.filter(b => b.deck === deck && !b.label).forEach(b => b.label = '1안');
+  const b = newBlock(deck, (n + 1) + '안', s ? s.boss : '디에네');
+  let idx = plan.blocks.map(x => x.deck).lastIndexOf(deck);
+  if (idx < 0) idx = deck === 1 ? -1 : plan.blocks.length - 1;
+  plan.blocks.splice(idx + 1, 0, b); activeBlock = idx + 1; touch(); render();
+}
+
+$('pool').addEventListener('click', e => {
+  const ch = e.target.closest('.chip'); if (!ch) return;
+  placeChar(activeBlock, ch.dataset.char);
+});
+$('pool').addEventListener('dragstart', e => {
+  const ch = e.target.closest('.chip'); if (!ch) return;
+  e.dataTransfer.setData('text/plain', JSON.stringify({ char: ch.dataset.char }));
+});
+
+const blocksEl = $('blocks');
+blocksEl.addEventListener('mousedown', e => {
+  const bl = e.target.closest('.block'); if (!bl) return;
+  const bi = +bl.dataset.block;
+  if (bi !== activeBlock) { activeBlock = bi; document.querySelectorAll('.block').forEach(x => x.classList.toggle('active', +x.dataset.block === bi)); renderPool(); }
+});
+blocksEl.addEventListener('click', e => {
+  const bl = e.target.closest('.block'); if (!bl) return;
+  const bi = +bl.dataset.block, plan = curPlan(), b = plan.blocks[bi];
+  const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act; if (!act) return;
+  if (act === 'skill') { activeBlock = bi; openSkillPicker(bi, e.target.closest('tr').dataset.char); return; }
+  if (act === 'rm') { const k = e.target.closest('.cell').dataset.cell; removeFromBlock(b, b.cells[k]); }
+  else if (act === 'up' && bi > 0) { [plan.blocks[bi - 1], plan.blocks[bi]] = [plan.blocks[bi], plan.blocks[bi - 1]]; activeBlock = bi - 1; }
+  else if (act === 'down' && bi < plan.blocks.length - 1) { [plan.blocks[bi + 1], plan.blocks[bi]] = [plan.blocks[bi], plan.blocks[bi + 1]]; activeBlock = bi + 1; }
+  else if (act === 'dup') { const c = JSON.parse(JSON.stringify(b)); c.label = (plan.blocks.filter(x => x.deck === b.deck).length + 1) + '안'; if (!b.label) b.label = '1안'; plan.blocks.splice(bi + 1, 0, c); activeBlock = bi + 1; }
+  else if (act === 'clear') { if (!confirm(`${b.deck}덱 ${b.label} 배치를 비울까요?`)) return; b.cells = {}; b.order = []; b.rows = {}; }
+  else if (act === 'del') { if (plan.blocks.length <= 1) { toast('블록이 하나는 있어야 해요', true); return; } if (!confirm(`${b.deck}덱 ${b.label} 블록을 삭제할까요?`)) return; plan.blocks.splice(bi, 1); activeBlock = 0; }
+  else if (act === 'rup' || act === 'rdown') {
+    const n = e.target.closest('tr').dataset.char, i = b.order.indexOf(n), j = act === 'rup' ? i - 1 : i + 1;
+    if (j < 0 || j >= b.order.length) return; [b.order[i], b.order[j]] = [b.order[j], b.order[i]];
+  } else return;
+  touch(); render();
+});
+blocksEl.addEventListener('input', e => {
+  const bl = e.target.closest('.block'); if (!bl) return;
+  const b = curPlan().blocks[+bl.dataset.block];
+  if (e.target.dataset.f) { b[e.target.dataset.f] = e.target.value; if (e.target.dataset.f === 'boss') render(); touch(); return; }
+  const f = e.target.dataset.row; if (!f) return;
+  const n = e.target.closest('tr').dataset.char;
+  let v = e.target.value;
+  if (v === '__custom') {
+    v = (prompt(`${nick(n)} ${f === 'cls' ? '클래스' : '아티팩트'} 이름을 입력하세요`, '') || '').trim();
+    setRow(b, n, f, v); render(); return;
+  }
+  setRow(b, n, f, v);
+});
+function setRow(b, n, f, v) {
+  b.rows[n] = b.rows[n] || {}; b.rows[n][f] = v;
+  // 다음에 이 캐릭터를 놓으면 그대로 불러오도록 기억 (딜·비고 제외)
+  S.history[n] = Object.assign({}, b.rows[n]); delete S.history[n].dmg; delete S.history[n].note;
+  touch();
+}
+
+/* ---------------- 스킬 선택 ---------------- */
+// 캐릭터의 스킬 목록: 붙여넣기로 가져온 것 → 나무위키 수집본 순. 변형 캐릭터(수제자 쿤 그리어 등)는 기본 캐릭터 목록으로 대신함
+function charSkills(n) {
+  const all = Object.assign({}, (window.GENESIS_SKILLS || {}).characters || {}, S.skillsExtra || {});
+  if (all[n]) return { list: all[n], from: n };
+  const key = Object.keys(all).filter(k => n.includes(k)).sort((a, b) => b.length - a.length)[0];
+  return key ? { list: all[key], from: key } : { list: [], from: '' };
+}
+function openSkillPicker(bi, n) {
+  const b = curPlan().blocks[bi], row = b.rows[n] || (b.rows[n] = {});
+  const cls = (row.cls || '').trim();
+  const sk = charSkills(n), official = sk.list.filter(s => !s.ult), ult = sk.list.find(s => s.ult);
+  const info = Object.fromEntries(sk.list.map(s => [s.n, s]));
+  // 예전에 줄여 쓴 이름(블레이즈, 브레스…)은 정식 이름 하나에만 들어맞으면 정식 이름으로 바꿔 줌
+  const toOfficial = t => { if (info[t]) return t; const m = official.filter(s => s.n.replace(/\s/g, '').includes(t.replace(/\s/g, ''))); return m.length === 1 ? m[0].n : t; };
+  let picked = [...new Set(splitSkills(row.skill).map(toOfficial))];
+  const mine = countSkills(c => c === n).map(toOfficial).filter(t => !info[t]);
+  const sameCls = cls ? countSkills((c, r) => c !== n && (r.cls || '').trim() === cls).filter(t => !info[t] && !mine.includes(t)) : [];
+  const rest = [...new Set([...countSkills(() => true), ...(DATA.activeSkills || [])])].filter(t => !info[t] && !mine.includes(t) && !sameCls.includes(t));
+  modal(`<h2>${esc(nick(n))} 스킬 선택${cls ? ` <span class="hint">· 클래스 ${esc(cls)}</span>` : ''}</h2>
+    <p class="hint">누른 순서대로 들어가요. ${sk.list.length ? `스킬 목록은 나무위키 문서${sk.from !== n ? `(${esc(sk.from)} 문서 참고)` : ''} 기준이에요.` : '이 캐릭터는 스킬 목록이 아직 없어요.'} <a href="#" id="skImport">캐릭터 관리에서 스킬 고치기</a></p>
+    <div class="kv"><b>선택됨</b> <span id="skPicked" class="chips" style="display:inline-flex;flex-wrap:wrap;margin-left:6px"></span></div>
+    <p><input type="text" id="skSearch" placeholder="검색하거나 새 스킬 이름 입력 후 Enter" style="width:100%"></p>
+    <div id="skGroups"></div>
+    ${ult ? `<p class="hint" style="margin-top:10px">초필살기: ${esc(ult.n)} (항상 장착되어 있어서 고르지 않아요)</p>` : ''}
+    <div class="foot"><button id="skClear">비우기</button><button data-close>취소</button><button class="primary" id="skOk">적용</button></div>`);
+  const draw = () => {
+    $('skPicked').innerHTML = picked.length ? picked.map((t, i) => `<span class="chip in" data-rm="${i}" title="빼기">${esc(t)} ✕</span>`).join('') : '<span class="hint">없음</span>';
+    const q = $('skSearch').value.trim();
+    const f = list => list.filter(t => !picked.includes(t) && (!q || t.includes(q)));
+    const chip = t => { const s = info[t]; const tip = s ? [s.tp, s.cd && '쿨 ' + s.cd, s.cls && s.cls + '에서 습득', s.tags].filter(Boolean).join(' · ') : ''; return `<span class="chip" data-add="${esc(t)}" title="${esc(tip)}">${esc(t)}${s && s.tp ? ` <span class="hint">${esc(s.tp.replace('TP ', ''))}</span>` : ''}</span>`; };
+    const grp = (title, list) => { const l = f(list); return l.length ? `<div class="grp">${title}</div><div class="chips">${l.slice(0, 60).map(chip).join('')}</div>` : ''; };
+    const byType = {}; official.forEach(s => (byType[s.t || '기타'] = byType[s.t || '기타'] || []).push(s.n));
+    const order = ['고유', '핵심', '공통', '이벤트'];
+    const typeKeys = Object.keys(byType).sort((a, b) => (order.indexOf(a) + 1 || 9) - (order.indexOf(b) + 1 || 9));
+    $('skGroups').innerHTML = typeKeys.map(k => grp(`${esc(k || '기타')} 스킬`, byType[k])).join('')
+      + grp(`${esc(nick(n))} 사용 기록`, mine) + (cls ? grp(`같은 클래스(${esc(cls)})에서 쓰던 스킬`, sameCls) : '') + (q || !official.length ? grp(q ? '다른 스킬' : '다른 캐릭터들이 쓰던 스킬', rest) : '')
+      || `<div class="hint">${q ? `Enter를 누르면 "${esc(q)}"을(를) 새 스킬로 추가해요` : '아직 기록된 스킬이 없어요. 위에 입력해서 추가하세요.'}</div>`;
+  };
+  $('skImport').onclick = e => { e.preventDefault(); openCharManager(n); };
+  $('skPicked').onclick = e => { const i = e.target.closest('[data-rm]'); if (i) { picked.splice(+i.dataset.rm, 1); draw(); } };
+  $('skGroups').onclick = e => { const a = e.target.closest('[data-add]'); if (a) { picked.push(a.dataset.add); draw(); } };
+  $('skSearch').oninput = draw;
+  $('skSearch').onkeydown = e => { if (e.key === 'Enter') { const v = e.target.value.trim(); if (v && !picked.includes(v)) picked.push(v); e.target.value = ''; draw(); } };
+  $('skClear').onclick = () => { picked = []; draw(); };
+  $('skOk').onclick = () => { setRow(b, n, 'skill', picked.join('/')); closeModal(); render(); };
+  draw(); $('skSearch').focus();
+}
+
+/* ---------------- 나무위키 붙여넣기로 스킬 가져오기 ---------------- */
+// 형식 ①: "N. 스킬" 아래 공통/고유 스킬마다 이름 · 태그 · 설명 · 소모/사거리/범위/쿨타임 표
+// 직접 복사(Ctrl+C)한 글은 표 칸이 탭으로 이어지고 '[편집]'이 제목에 붙어 오기도 해서 줄 단위로 맞춰 줌
+const namuLines = text => text.split(/\r?\n|\t/).flatMap(s => { s = s.trim(); return s.length > 4 && s.endsWith('[편집]') ? [s.slice(0, -4).trim(), '[편집]'] : [s]; });
+function parseNamuSkills(text) {
+  const L = namuLines(text);
+  let start = -1, major = '';
+  for (let i = 0; i < L.length - 1; i++) { const m = L[i].match(/^(\d+)\.\s*스킬$/); if (m && L[i + 1] === '[편집]') { start = i + 2; major = m[1]; break; } }
+  if (start < 0) return [];
+  const skills = []; let type = '', expect = true, cur = null, phase = 0, vals = 0;
+  for (let i = start; i < L.length; i++) {
+    const s = L[i]; if (!s) continue;
+    const h = s.match(/^(\d+)(?:\.\d+)*\.\s*(.+)$/);
+    if (h && L[i + 1] === '[편집]') { if (h[1] !== major) break; type = h[2].replace(' 스킬', '').trim(); expect = true; phase = 0; i++; continue; }
+    if (phase === 1) { vals++; if (cur && vals === 1) cur.tp = s; if (cur && vals === 4) { cur.cd = s; phase = 2; } continue; }
+    if (phase === 2) { phase = 0; expect = true; if (s.startsWith('허용 무기')) { if (cur) cur.w = s.replace(/^허용 무기\s*:\s*/, ''); continue; } }
+    if (s === '쿨타임') { phase = 1; vals = 0; continue; }
+    if (expect) { const name = s.replace(/^파일:.*?\.(png|jpe?g|gif|webp)/i, '').trim(); if (!name) continue; cur = { n: name, t: type }; skills.push(cur); expect = false; continue; }
+    if (cur && !cur.tags && s.startsWith('[')) cur.tags = s;
+  }
+  return skills;
+}
+// 형식 ②: "핵심 스킬과 초필살기" 단락 안의 "스킬명: TP 2 소모 …" 문장, 또는 스킬명 한 줄 + "TP 소모 2 …" 줄
+function parseNamuSkills2(text) {
+  const L = namuLines(text).filter(Boolean);
+  const i = L.findIndex((s, j) => /핵심 스킬/.test(s) && L[j + 1] === '[편집]');
+  if (i < 0) return [];
+  const out = [], seen = new Set(), clsOf = {};
+  const add = (name, extra) => { name = name.trim().replace(/^['"‘’]|['"‘’]$/g, ''); if (!name || name.length > 16 || /[.,:]/.test(name) || seen.has(name)) return; seen.add(name); out.push(Object.assign({ n: name, t: '핵심' }, extra)); };
+  const tpOf = s => { const m = s.match(/TP\s*(?:소모\s*)?(\d)|TP\s*(\d)\s*소모/); return m ? 'TP ' + (m[1] || m[2]) : undefined; };
+  const cdOf = s => { const m = s.match(/쿨타임[은는]?\s*(\d)/); return m ? m[1] + '턴' : undefined; };
+  for (let j = i + 2; j < L.length; j++) {
+    const s = L[j]; if (L[j + 1] === '[편집]' && /^\d+(\.\d+)*\.\s/.test(s)) break;
+    // "보이드나이트에서 배우는 '공허 전개'" / "임페리얼 거너에서 배우는 충격 사격," → 스킬을 배우는 클래스
+    for (const m of s.matchAll(/([가-힣A-Za-z.\s]{2,20}?)\s*(?:에서|로|이)\s*배우는\s*['‘]?([^,'’.]+?)['’]?(?=\s*[,.]|\s*등|\s*이\s|\s*가\s|\s*의\s|$)/g)) clsOf[m[2].trim()] = m[1].trim().replace(/^.*[는은,]\s+/, '');
+    const m = s.match(/^([^:：.]{2,16}?)\s*[:：]\s*TP\s*(?:소모\s*)?\d/);
+    if (m) { add(m[1], { tp: tpOf(s), cd: cdOf(s) }); continue; }
+    if (s.length <= 16 && /^TP\s*(소모\s*)?\d/.test(L[j + 1] || '')) { add(s, { tp: tpOf(L[j + 1]), cd: cdOf(L[j + 1]) }); continue; }
+    const u = s.match(/초필살기[인은]\s*(\S+?)[은는이가]\s/); if (u) add(u[1], { tags: '[초필살기]' });
+  }
+  for (const sk of Object.keys(clsOf)) add(sk, {});
+  out.forEach(o => { if (clsOf[o.n]) o.cls = clsOf[o.n]; });
+  return out;
+}
+function parseSkillPaste(text) {
+  let list = parseNamuSkills(text);
+  if (!list.length) list = parseNamuSkills2(text);
+  const names = list.map(s => s.n), seen = new Set();
+  // '전장'처럼 다른 스킬 이름의 앞부분만 잘린 조각은 버림
+  return list.filter(s => s.n.length <= 16 && !names.some(o => o !== s.n && o.startsWith(s.n)) && !seen.has(s.n) && seen.add(s.n))
+    .map(s => Object.assign(s, { ult: /초필살기/.test(s.tags || '') || undefined }));
+}
+blocksEl.addEventListener('change', e => {
+  if (e.target.dataset.row !== 'dmg') return;
+  // 다시 그리면 다음 칸 포커스가 날아가므로 막대/합계만 갱신
+  const bl = e.target.closest('.block'), b = curPlan().blocks[+bl.dataset.block];
+  const vals = b.order.map(n => +((b.rows[n] || {}).dmg) || 0), max = Math.max(1, ...vals);
+  bl.querySelectorAll('tr[data-char] .bar').forEach((el, i) => el.style.width = Math.round(vals[i] / max * 100) + '%');
+  const tot = bl.querySelector('tr.total td:nth-child(2)'); if (tot) { const s = vals.reduce((a, v) => a + v, 0); tot.textContent = s ? s.toLocaleString() : ''; }
+});
+blocksEl.addEventListener('dragstart', e => {
+  const cell = e.target.closest('.cell.on'); if (!cell) return;
+  e.dataTransfer.setData('text/plain', JSON.stringify({ block: +cell.closest('.block').dataset.block, key: cell.dataset.cell }));
+});
+blocksEl.addEventListener('dragover', e => { const c = e.target.closest('.cell[data-seat]'); if (c) { e.preventDefault(); c.classList.add('over'); } });
+blocksEl.addEventListener('dragleave', e => { const c = e.target.closest('.cell'); if (c) c.classList.remove('over'); });
+blocksEl.addEventListener('drop', e => {
+  const c = e.target.closest('.cell'); if (!c) return; e.preventDefault();
+  let d; try { d = JSON.parse(e.dataTransfer.getData('text/plain')); } catch (_) { return; }
+  const bi = +c.closest('.block').dataset.block;
+  activeBlock = bi;
+  if (d.char) placeChar(bi, d.char, c.dataset.cell);
+  else if (d.key != null) moveCell(d.block, d.key, bi, c.dataset.cell);
+});
+
+/* ---------------- 지난 배치 가져오기 ---------------- */
+$('btnCopyPrev').onclick = () => {
+  const cur = curSeason(), labels = Object.fromEntries(seasonList().map(s => [s.key, s.label]));
+  const rows = Object.entries(S.plans).filter(([k, p]) => k !== (cur && cur.key) && p.blocks.some(b => b.order.length))
+    .sort((a, b) => (b[1].updated || 0) - (a[1].updated || 0));
+  modal(`<h2>지난 배치 가져오기</h2>
+    <p class="hint">고른 배치를 지금 시즌(${esc(cur ? cur.label : '')})으로 복사해요. 지금 배치는 덮어써지고, 보스 템플릿은 지금 시즌 보스로 바뀌어요.</p>
+    <table><tr><th>시즌</th><th>제목</th><th>덱 구성</th><th></th></tr>
+    ${rows.map(([k, p]) => `<tr><td>${esc(labels[k] || k)}</td><td>${esc(p.title || '')}</td><td class="hint">${p.blocks.map(b => `${b.deck}덱${b.label ? '(' + esc(b.label) + ')' : ''}: ${b.order.map(n => esc(nick(n))).join(' ')}`).join('<br>')}</td>
+      <td><button class="sm primary" data-copy="${esc(k)}">가져오기</button></td></tr>`).join('') || '<tr><td colspan="4" class="hint">저장된 다른 배치가 없어요.</td></tr>'}
+    </table><div class="foot"><button data-close>닫기</button></div>`);
+  $('modal').querySelectorAll('[data-copy]').forEach(btn => btn.onclick = () => {
+    const src = S.plans[btn.dataset.copy], plan = curPlan();
+    plan.blocks = JSON.parse(JSON.stringify(src.blocks)).map(b => Object.assign(b, { boss: cur.boss }));
+    activeBlock = 0; touch(); closeModal(); render(); toast('지난 배치를 가져왔어요. 바뀐 부분만 고치면 돼요');
+  });
+};
+
+/* ---------------- 직접 시즌 ---------------- */
+$('btnCustomSeason').onclick = () => {
+  modal(`<h2>시즌 직접 만들기</h2>
+    <p class="hint">공지가 아직 없거나, 연습용 배치가 필요할 때 써요.</p>
+    <p>이름 <input type="text" id="csName" style="width:260px" placeholder="기사단 디에네 3-1"></p>
+    <p>보스 <select id="csBoss">${Object.keys(HOT).map(k => `<option>${k}</option>`).join('')}</select>
+       구분 <select id="csMode"><option>기사단</option><option>개인</option></select></p>
+    <p>입장 속성<br>${ATTRS.map(a => `<label style="margin-right:8px"><input type="checkbox" class="csAttr" value="${a}" checked> ${a}</label>`).join('')}</p>
+    <div class="foot"><button data-close>취소</button><button class="primary" id="csOk">만들기</button></div>`);
+  $('csOk').onclick = () => {
+    const name = $('csName').value.trim(); if (!name) { toast('이름을 입력하세요', true); return; }
+    const key = 'custom-' + Date.now();
+    S.customSeasons.push({ key, name, boss: $('csBoss').value, mode: $('csMode').value, season: '', allowed: [...document.querySelectorAll('.csAttr:checked')].map(x => x.value), buffChars: [], randomBuffChars: [] });
+    S.currentSeason = key; closeModal(); save(); render();
+  };
+};
+
+/* ---------------- 캐릭터 관리 ---------------- */
+// 왼쪽 목록 + 오른쪽 상세(기본 정보 / 클래스 / 전용 무기·아티팩트 / 스킬)를 한 화면에서 고침.
+// 고친 내용은 '저장'을 눌러야 반영되고, 저장 안 한 채로 다른 캐릭터를 고르거나 닫으면 한 번 물어봄.
+const CM = { sel: null, draft: null, orig: '', q: '', filter: 'all', paste: false, adding: false };
+const TIER_KEYS = ['Tier3', 'Tier2', 'Tier1'];
+const SK_TYPES = ['고유', '공통', '핵심', '초필살기'];
+function baseOf(n) { return allChars(false).get(n) || { name: n, tiers: {}, artifacts: [], weapon: '', attr: '' }; }
+function namuSkills(n) {
+  const all = (window.GENESIS_SKILLS || {}).characters || {};
+  if (all[n]) return { list: all[n], from: n };
+  const k = Object.keys(all).filter(x => n.includes(x)).sort((a, b) => b.length - a.length)[0];
+  return k ? { list: all[k], from: k } : { list: [], from: '' };
+}
+// 공지 표 머리글이 제각각이라 Tier3/Tier2/Tier1 세 칸으로 맞춤
+function normTiers(t) {
+  const out = { Tier3: [], Tier2: [], Tier1: [] };
+  for (const [k, v] of Object.entries(t || {})) { const key = 'Tier' + ((k.match(/[123]/) || ['3'])[0]); out[key] = [...new Set([...out[key], ...v])]; }
+  return out;
+}
+const skillRows = list => list.map(s => ({ n: s.n, t: s.ult ? '초필살기' : (s.t || '고유'), tp: (s.tp || '').replace(/^TP\s*/, ''), cls: s.cls || '' }));
+function missingOf(c) {
+  const m = [];
+  if (!c.attr) m.push('속성');
+  if (!Object.values(c.tiers || {}).flat().length) m.push('클래스');
+  if (!charSkills(c.name).list.length) m.push('스킬');
+  return m;
+}
+function makeDraft(n) {
+  const c = CHARS.get(n);
+  return { name: n, nick: nick(n), attr: c.attr || '', hidden: !!c.hidden, weapon: c.weapon || '', artifacts: [...(c.artifacts || [])],
+    tiers: normTiers(c.tiers), skills: skillRows(charSkills(n).list) };
+}
+const cmDirty = () => !!CM.draft && JSON.stringify(CM.draft) !== CM.orig;
+const cmConfirmLeave = () => !cmDirty() || confirm('저장하지 않은 변경이 있어요. 버리고 넘어갈까요?');
+function cmSelect(n) {
+  CM.sel = n; CM.adding = false; CM.paste = false;
+  CM.draft = n ? makeDraft(n) : null; CM.orig = JSON.stringify(CM.draft);
+  cmRenderList(); cmRenderDetail(); if ($('cmDetail')) $('cmDetail').scrollTop = 0;
+}
+
+function openCharManager(n) {
+  CM.q = ''; CM.filter = 'all';
+  modal(`<div class="cm-head"><h2>캐릭터 관리</h2><span class="hint">공지·나무위키에 없는 정보는 여기서 직접 넣고 고쳐요. 고친 뒤 꼭 [저장]을 눌러 주세요.</span><span style="flex:1"></span><button id="cmClose">닫기</button></div>
+    <div class="cm-body">
+      <div class="cm-left">
+        <div class="cm-tools">
+          <input type="text" id="cmQ" placeholder="이름·줄임말 검색">
+          <select id="cmF"><option value="all">전체 보기</option><option value="miss">정보가 빠진 캐릭터만</option>${ATTRS.map(a => `<option value="a:${a}">${a}</option>`).join('')}<option value="a:">속성 미지정</option><option value="custom">직접 추가한 캐릭터</option><option value="hidden">숨긴 캐릭터</option></select>
+          <button id="cmNew">+ 새 캐릭터 추가</button>
+        </div>
+        <div class="cm-list" id="cmList"></div>
+      </div>
+      <div class="cm-right" id="cmDetail"></div>
+    </div>
+    <div class="cm-foot"><span class="dirty" id="cmDirty"></span><span style="flex:1"></span><button id="cmRevert">변경 취소</button><button class="primary" id="cmSave">저장</button></div>`, 'wide');
+  $('cmClose').onclick = () => { if (!cmConfirmLeave()) return; CM.draft = null; closeModal(); render(); };
+  $('cmQ').oninput = e => { CM.q = e.target.value.trim(); cmRenderList(); };
+  $('cmF').onchange = e => { CM.filter = e.target.value; cmRenderList(); };
+  $('cmNew').onclick = () => { if (!cmConfirmLeave()) return; CM.sel = null; CM.draft = null; CM.orig = 'null'; CM.adding = true; cmRenderList(); cmRenderDetail(); };
+  $('cmSave').onclick = cmSave;
+  $('cmRevert').onclick = () => { if (CM.sel && cmDirty() && confirm('저장하지 않은 변경을 되돌릴까요?')) cmSelect(CM.sel); };
+  // Ctrl+S 로 저장
+  $('modal').onkeydown = e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); cmSave(); } };
+  cmSelect(n && CHARS.has(n) ? n : null);
+}
+
+function cmRenderList() {
+  const el = $('cmList'); if (!el) return;
+  const list = [...CHARS.values()].filter(c => {
+    if (CM.q && !(c.name.includes(CM.q) || nick(c.name).includes(CM.q))) return false;
+    const f = CM.filter;
+    if (f === 'miss') return missingOf(c).length > 0;
+    if (f === 'custom') return !!c.custom;
+    if (f === 'hidden') return !!c.hidden;
+    if (f.startsWith('a:')) return (c.attr || '') === f.slice(2);
+    return true;
+  }).sort((a, b) => (ATTRS.indexOf(a.attr) + 1 || 9) - (ATTRS.indexOf(b.attr) + 1 || 9) || nick(a.name).localeCompare(nick(b.name), 'ko'));
+  el.innerHTML = `<div class="hint" style="padding:6px 10px">${list.length}명</div>` + (list.map(c => {
+    const miss = missingOf(c);
+    return `<div class="cm-item${c.name === CM.sel ? ' sel' : ''}${c.hidden ? ' hid' : ''}" data-n="${esc(c.name)}">
+      <span class="dot" style="background:var(${ATTR_COLOR[c.attr] || '--a-none'})" title="${esc(c.attr || '속성 미지정')}"></span>
+      <span class="nm"><b>${esc(nick(c.name))}</b><span>${esc(c.name)}${c.custom ? ' · 직접 추가' : ''}</span></span>
+      ${miss.length ? `<span class="miss" title="빠진 정보">${miss.join('·')} 없음</span>` : ''}</div>`;
+  }).join('') || '<div class="cm-empty">조건에 맞는 캐릭터가 없어요</div>');
+  el.querySelectorAll('.cm-item').forEach(it => it.onclick = () => { if (it.dataset.n === CM.sel || !cmConfirmLeave()) return; cmSelect(it.dataset.n); });
+  const s = el.querySelector('.sel'); if (s) s.scrollIntoView({ block: 'nearest' });
+}
+
+const tagList = (items, key) => items.map((v, i) => `<span class="tag">${esc(v)}<button data-rmtag="${key}" data-i="${i}" title="빼기">✕</button></span>`).join('');
+
+function cmRenderDetail() {
+  const el = $('cmDetail'); if (!el) return;
+  if (CM.adding) return cmRenderNew(el);
+  const d = CM.draft;
+  if (!d) { el.innerHTML = '<div class="cm-empty">왼쪽에서 캐릭터를 고르세요.<br><br>빠진 정보만 보려면 목록 위에서 "정보가 빠진 캐릭터만"을 고르면 돼요.</div>'; el.oninput = el.onclick = el.onkeydown = null; cmUpdateDirty(); return; }
+  const base = baseOf(d.name), nsk = namuSkills(d.name), own = !!(S.skillsExtra && S.skillsExtra[d.name]);
+  const baseTierCount = Object.values(base.tiers || {}).flat().length;
+  const allCls = TIER_KEYS.flatMap(k => d.tiers[k]);
+  el.innerHTML = `
+    <div class="cm-sec"><h3>기본 정보 <span class="src">${base.released ? `공지 ${fmtDate(base.released)}` : base.custom ? '직접 추가한 캐릭터' : '시즌 공지에 이름만 나온 캐릭터'}</span></h3>
+      <div class="cm-grid">
+        <label>정식 이름</label><div><b>${esc(d.name)}</b>${base.custom ? ' <button class="sm" id="cmDel">이 캐릭터 삭제</button>' : ''}</div>
+        <label>줄임말</label><div><input type="text" data-f="nick" value="${esc(d.nick)}" style="width:160px"> <span class="hint">배치표·이미지에 보이는 이름</span></div>
+        <label>속성</label><div><select data-f="attr"><option value="">미지정</option>${ATTRS.map(a => `<option${a === d.attr ? ' selected' : ''}>${a}</option>`).join('')}</select>${base.attr && base.attr !== d.attr ? ` <span class="hint">원래 값: ${esc(base.attr)}</span>` : ''}</div>
+        <label>숨김</label><div><label class="hint"><input type="checkbox" data-f="hidden"${d.hidden ? ' checked' : ''}> 캐릭터 풀에서 숨기기 (안 쓰는 캐릭터)</label></div>
+      </div></div>
+    <div class="cm-sec"><h3>클래스 (전직 트리) <span class="src">${baseTierCount ? `${base.tiersFrom === 'namu' ? '나무위키' : '공지'} 기준 · 고치면 고친 값이 우선` : '공지·나무위키에 없음 · 직접 입력'}</span></h3>
+      ${TIER_KEYS.map(k => `<div class="tier-row"><span class="tl">${k.replace('Tier', '')}차</span><div>${tagList(d.tiers[k], k)}<input class="tagadd" data-add="${k}" placeholder="+ 추가 (Enter)"></div></div>`).join('')}
+      <div class="hint">장비표의 클래스 목록에는 3차가 먼저 나와요.</div></div>
+    <div class="cm-sec"><h3>전용 무기 · 아티팩트</h3>
+      <div class="cm-grid">
+        <label>전용 무기</label><div><input type="text" data-f="weapon" value="${esc(d.weapon)}" style="width:220px"></div>
+        <label>아티팩트</label><div>${tagList(d.artifacts, 'art')}<input class="tagadd" data-add="art" placeholder="+ 추가 (Enter)" list="cmArtList"></div>
+      </div><datalist id="cmArtList">${(DATA.artifacts || []).map(a => `<option value="${esc(a)}">`).join('')}</datalist>
+      <div class="hint" style="margin-top:4px">장비표의 아티팩트 선택지가 이 목록이에요.</div></div>
+    <div class="cm-sec"><h3>스킬 <span class="src">${own ? '직접 고친 목록' : nsk.list.length ? `나무위키${nsk.from !== d.name ? ` (${esc(nsk.from)} 문서 참고)` : ''}` : '목록 없음 · 직접 입력'}</span></h3>
+      <table class="sk-table"><tr><th style="width:24px"></th><th>스킬 이름</th><th style="width:96px">종류</th><th style="width:52px">TP</th><th style="width:170px">배우는 클래스</th><th style="width:30px"></th></tr>
+      ${d.skills.map((s, i) => `<tr data-i="${i}"><td>${i ? '<button class="mv" data-mv="1" title="위로">▲</button>' : ''}</td>
+        <td><input type="text" data-k="n" value="${esc(s.n)}" placeholder="스킬 이름"></td>
+        <td><select data-k="t">${SK_TYPES.map(t => `<option${t === s.t ? ' selected' : ''}>${t}</option>`).join('')}</select></td>
+        <td><input type="text" data-k="tp" value="${esc(s.tp)}"></td>
+        <td><input type="text" data-k="cls" value="${esc(s.cls)}" list="cmClsList"></td>
+        <td><button class="sm" data-rmsk="${i}" title="삭제">✕</button></td></tr>`).join('') || '<tr><td colspan="6" class="hint">스킬이 없어요. 아래에서 추가하거나 나무위키에서 붙여넣으세요.</td></tr>'}
+      </table><datalist id="cmClsList">${allCls.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
+      <p style="margin:8px 0 0"><button id="cmSkAdd">+ 스킬 추가</button> <button id="cmPasteTg">${CM.paste ? '붙여넣기 닫기' : '나무위키 붙여넣기'}</button>
+        ${own && nsk.list.length ? '<button id="cmSkReset">나무위키 목록으로 되돌리기</button>' : ''}</p>
+      <div class="hint">종류가 "초필살기"면 스킬 고르기 목록에서 빠지고 따로 표시돼요. 배우는 클래스는 위 클래스 목록에서 고를 수 있어요.</div>
+      ${CM.paste ? `<div style="margin-top:8px;border-top:1px dashed var(--line);padding-top:8px">
+        <div class="hint">나무위키 문서를 열고 Ctrl+A → Ctrl+C 한 뒤 아래에 붙여넣어요. <a href="#" id="cmNamu">${esc(d.name)} 나무위키 문서 열기</a></div>
+        <textarea id="cmPaste" style="width:100%;height:110px;margin-top:4px" placeholder="여기에 붙여넣기 (Ctrl+V)"></textarea>
+        <div id="cmPastePrev" class="hint"></div>
+        <p style="margin:6px 0 0"><button id="cmPasteAdd">지금 목록에 더하기</button> <button id="cmPasteReplace">지금 목록을 바꾸기</button></p></div>` : ''}
+    </div>`;
+  const d2 = CM.draft;
+  el.oninput = e => {
+    const f = e.target.dataset.f;
+    if (f) { d2[f] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; cmUpdateDirty(); return; }
+    const tr = e.target.closest('tr[data-i]');
+    if (tr && e.target.dataset.k) { d2.skills[+tr.dataset.i][e.target.dataset.k] = e.target.value; cmUpdateDirty(); }
+    if (e.target.id === 'cmPaste') {
+      const p = parseSkillPaste(e.target.value);
+      $('cmPastePrev').innerHTML = p.length ? `찾은 스킬 ${p.length}개: ${p.map(s => esc(s.n) + (s.ult ? '(초필살기)' : '')).join(', ')}`
+        : (e.target.value.trim() ? '<span style="color:var(--warn)">스킬 부분을 찾지 못했어요. 페이지 전체(Ctrl+A)를 복사했는지 확인해 주세요.</span>' : '');
+    }
+  };
+  el.onchange = el.oninput;
+  el.onkeydown = e => {
+    const k = e.target.dataset.add; if (!k || e.key !== 'Enter') return;
+    e.preventDefault(); const v = e.target.value.trim(); if (!v) return;
+    const arr = k === 'art' ? d2.artifacts : d2.tiers[k]; if (!arr.includes(v)) arr.push(v);
+    cmRenderDetail(); const again = $('cmDetail').querySelector(`[data-add="${k}"]`); if (again) again.focus();
+  };
+  el.onclick = e => {
+    const t = e.target.closest('button,a'); if (!t) return;
+    if (t.dataset.rmtag) { (t.dataset.rmtag === 'art' ? d2.artifacts : d2.tiers[t.dataset.rmtag]).splice(+t.dataset.i, 1); cmRenderDetail(); return; }
+    if (t.dataset.rmsk != null) { d2.skills.splice(+t.dataset.rmsk, 1); cmRenderDetail(); return; }
+    if (t.dataset.mv) { const i = +t.closest('tr').dataset.i; [d2.skills[i - 1], d2.skills[i]] = [d2.skills[i], d2.skills[i - 1]]; cmRenderDetail(); return; }
+    if (t.id === 'cmSkAdd') { d2.skills.push({ n: '', t: '고유', tp: '', cls: '' }); cmRenderDetail(); const ins = $('cmDetail').querySelectorAll('input[data-k="n"]'); ins[ins.length - 1].focus(); return; }
+    if (t.id === 'cmPasteTg') { CM.paste = !CM.paste; cmRenderDetail(); if (CM.paste) $('cmPaste').focus(); return; }
+    if (t.id === 'cmNamu') { e.preventDefault(); window.open('https://namu.wiki/w/' + encodeURIComponent(d2.name + '(창세기전 모바일: 아수라 프로젝트)'), '_blank'); return; }
+    if (t.id === 'cmPasteAdd' || t.id === 'cmPasteReplace') {
+      const rows = skillRows(parseSkillPaste($('cmPaste').value));
+      if (!rows.length) { toast('붙여넣은 내용에서 스킬을 찾지 못했어요', true); return; }
+      if (t.id === 'cmPasteReplace') d2.skills = rows; else for (const r of rows) if (!d2.skills.some(x => x.n === r.n)) d2.skills.push(r);
+      CM.paste = false; cmRenderDetail(); toast(`스킬 ${rows.length}개를 넣었어요. [저장]을 눌러야 반영돼요`); return;
+    }
+    if (t.id === 'cmSkReset') { d2.skills = skillRows(nsk.list); cmRenderDetail(); return; }
+    if (t.id === 'cmDel') { cmDeleteChar(d2.name); return; }
+  };
+  cmUpdateDirty();
+}
+
+function cmRenderNew(el) {
+  el.innerHTML = `<div class="cm-sec"><h3>새 캐릭터 추가</h3>
+    <div class="cm-grid">
+      <label>정식 이름</label><div><input type="text" id="cnName" style="width:240px" placeholder="공지에 나온 이름 그대로"></div>
+      <label>속성</label><div><select id="cnAttr"><option value="">미지정</option>${ATTRS.map(a => `<option>${a}</option>`).join('')}</select></div>
+    </div>
+    <p class="hint">추가한 뒤 클래스·스킬 등을 이어서 입력할 수 있어요. 다음 공지 갱신 때 같은 이름의 캐릭터가 공지에 나오면 공지 정보가 함께 쓰여요.</p>
+    <p><button id="cnCancel">취소</button> <button class="primary" id="cnOk">추가</button></p></div>`;
+  el.oninput = el.onkeydown = null; el.onclick = null;
+  $('cnName').focus();
+  $('cnCancel').onclick = () => { CM.adding = false; cmRenderDetail(); };
+  const ok = () => {
+    const n = $('cnName').value.trim();
+    if (!n) { toast('이름을 입력하세요', true); return; }
+    if (CHARS.has(n)) { toast('이미 있는 캐릭터예요', true); cmSelect(n); return; }
+    S.customChars.push({ name: n, attr: $('cnAttr').value }); save(); CHARS = allChars();
+    toast(`${n}을(를) 추가했어요`); cmSelect(n);
+  };
+  $('cnOk').onclick = ok;
+  $('cnName').onkeydown = e => { if (e.key === 'Enter') ok(); };
+  cmUpdateDirty();
+}
+
+function cmDeleteChar(n) {
+  const used = Object.values(S.plans).some(p => p.blocks.some(b => b.order.includes(n)));
+  if (!confirm(`${n}을(를) 삭제할까요?${used ? '\n이 캐릭터가 들어간 배치에서도 빠져요.' : ''}`)) return;
+  S.customChars = S.customChars.filter(c => c.name !== n);
+  delete S.charMeta[n]; delete S.history[n]; if (S.skillsExtra) delete S.skillsExtra[n];
+  for (const p of Object.values(S.plans)) for (const b of p.blocks) removeFromBlock(b, n);
+  save(); CHARS = allChars(); CM.draft = null; CM.orig = 'null'; cmSelect(null); toast('삭제했어요');
+}
+
+function cmUpdateDirty() {
+  const dirty = cmDirty();
+  if ($('cmDirty')) $('cmDirty').textContent = dirty ? '● 저장하지 않은 변경이 있어요' : (CM.draft ? '' : '');
+  if ($('cmSave')) $('cmSave').disabled = !CM.draft;
+  if ($('cmRevert')) $('cmRevert').disabled = !dirty;
+}
+
+function cmSave() {
+  const d = CM.draft; if (!d) return;
+  if (!cmDirty()) { toast('바뀐 내용이 없어요'); return; }
+  const base = baseOf(d.name), orig = JSON.parse(CM.orig);
+  const m = S.charMeta[d.name] = S.charMeta[d.name] || {};
+  // 공지/나무위키 값과 같은 항목은 따로 저장하지 않음 → 다음 공지 갱신을 그대로 받음
+  const nk = d.nick.trim(); if (nk && nk !== (DEFAULT_NICK[d.name] || d.name)) m.nick = nk; else delete m.nick;
+  if (d.attr !== (base.attr || '')) m.attr = d.attr; else delete m.attr;
+  if (d.hidden) m.hidden = true; else delete m.hidden;
+  const pack = t => { const o = {}; for (const k of TIER_KEYS) if (t[k].length) o[k] = t[k]; return o; };
+  if (JSON.stringify(pack(d.tiers)) !== JSON.stringify(pack(normTiers(base.tiers)))) m.tiers = pack(d.tiers); else delete m.tiers;
+  if (JSON.stringify(d.artifacts) !== JSON.stringify(base.artifacts || [])) m.artifacts = d.artifacts; else delete m.artifacts;
+  if (d.weapon !== (base.weapon || '')) m.weapon = d.weapon; else delete m.weapon;
+  if (!Object.keys(m).length) delete S.charMeta[d.name];
+  if (JSON.stringify(d.skills) !== JSON.stringify(orig.skills)) {
+    const seen = new Set();
+    const rows = d.skills.map(r => ({ n: r.n.trim(), t: r.t, tp: String(r.tp).trim(), cls: r.cls.trim() })).filter(r => r.n && !seen.has(r.n) && seen.add(r.n));
+    S.skillsExtra = S.skillsExtra || {};
+    if (JSON.stringify(rows) === JSON.stringify(skillRows(namuSkills(d.name).list))) delete S.skillsExtra[d.name];
+    else S.skillsExtra[d.name] = rows.map(r => Object.assign({ n: r.n, t: r.t === '초필살기' ? '고유' : r.t },
+      r.tp ? { tp: 'TP ' + r.tp } : {}, r.cls ? { cls: r.cls } : {}, r.t === '초필살기' ? { ult: true } : {}));
+  }
+  save(); CHARS = allChars(); toast(`${nick(d.name)} 정보를 저장했어요`); cmSelect(d.name);
+}
+$('btnChars').onclick = () => openCharManager();
+
+/* ---------------- 백업/복원 ---------------- */
+$('btnBackup').onclick = () => {
+  modal(`<h2>백업 / 복원</h2>
+    <p class="hint">배치와 장비 기록은 이 브라우저에 자동 저장돼요. 브라우저 데이터를 지우거나 다른 PC로 옮길 때를 대비해 가끔 백업 파일로 받아 두세요.</p>
+    <p><button class="primary" id="bkSave">백업 파일 받기 (.json)</button></p>
+    <p>복원: <input type="file" id="bkFile" accept=".json"></p>
+    <div class="foot"><button data-close>닫기</button></div>`);
+  $('bkSave').onclick = () => download(new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' }), `창모배치표_백업_${today()}.json`);
+  $('bkFile').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try { const d = JSON.parse(await f.text()); if (!d.plans) throw 0; if (!confirm('지금 데이터를 백업 파일 내용으로 바꿀까요?')) return; S = Object.assign(blankState(), d); save(); closeModal(); render(); toast('복원했어요'); }
+    catch (_) { toast('백업 파일을 읽지 못했어요', true); }
+  };
+};
+
+/* ---------------- 이미지 / 엑셀 ---------------- */
+const today = () => { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`; };
+function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+async function captureCanvas() {
+  if (!window.html2canvas) { toast('이미지 기능을 불러오지 못했어요 (인터넷 연결 확인)', true); return null; }
+  document.activeElement && document.activeElement.blur();
+  document.querySelectorAll('.memo').forEach(t => t.classList.toggle('blank', !t.value.trim()));
+  document.body.classList.add('capturing');
+  document.querySelectorAll('.block.active').forEach(b => b.classList.remove('active'));
+  // 창 크기와 상관없이 항상 넓은 레이아웃(배치판 + 장비표 가로 배치)으로 캡처
+  try { return await html2canvas($('capture'), { scale: 2, backgroundColor: '#ffffff', logging: false, windowWidth: 1700 }); }
+  finally { document.body.classList.remove('capturing'); renderBlocks(); }
+}
+$('btnPng').onclick = async () => {
+  const c = await captureCanvas(); if (!c) return;
+  c.toBlob(b => download(b, `${(curPlan().title || '배치표').replace(/[\\/:*?"<>|]/g, '')}_${today()}.png`));
+};
+$('btnCopyImg').onclick = async () => {
+  const c = await captureCanvas(); if (!c) return;
+  c.toBlob(async b => {
+    try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); toast('이미지를 복사했어요. 카톡/디스코드에 바로 붙여넣기 하세요'); }
+    catch (_) { download(b, `배치표_${today()}.png`); toast('클립보드 복사가 막혀서 PNG 파일로 저장했어요', true); }
+  });
+};
+$('btnXlsx').onclick = async () => {
+  if (!window.ExcelJS) { toast('엑셀 기능을 불러오지 못했어요 (인터넷 연결 확인)', true); return; }
+  const plan = curPlan(), s = curSeason();
+  const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet('배치표');
+  const thin = { style: 'thin', color: { argb: 'FFBFC5CE' } }, border = { top: thin, left: thin, bottom: thin, right: thin };
+  const fill = argb => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
+  ws.columns = [{ width: 2 }, ...Array(7).fill({ width: 7 }), { width: 6 }, { width: 10 }, ...FIELDS.map(f => ({ width: Math.max(6, Math.round(f[2] / 7)) })), { width: 10 }];
+  ws.mergeCells(1, 2, 1, 21);
+  Object.assign(ws.getCell(1, 2), { value: plan.title || '', font: { bold: true, size: 14 } });
+  let r0 = 3;
+  for (const b of plan.blocks) {
+    ws.mergeCells(r0, 2, r0, 8);
+    Object.assign(ws.getCell(r0, 2), { value: `${b.deck}덱${b.label ? ` (${b.label})` : ''}`, font: { bold: true }, fill: fill('FFE9ECF1') });
+    ['순서', '캐릭터', ...FIELDS.map(f => f[1])].forEach((t, i) => Object.assign(ws.getCell(r0, 9 + i), { value: t, font: { bold: true }, fill: fill('FFE9ECF1'), border, alignment: { horizontal: 'center' } }));
+    const g = r0 + 1;
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      if (BOSS_CELLS.some(([a, d]) => a === r && d === c)) continue;
+      const seat = seatType(b.boss, r, c);
+      if (!seat && !b.cells[r + ',' + c]) continue;
+      const cell = ws.getCell(g + r, 2 + c), n = b.cells[r + ',' + c];
+      cell.border = border; cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      if (n) { cell.value = nick(n); cell.fill = fill('FFDCE8FD'); cell.font = { bold: true }; }
+      else cell.fill = fill(seat === 'front' ? 'FFFFF4CC' : 'FFE9F7EF');
+    }
+    ws.mergeCells(g, 4, g + 1, 6);
+    Object.assign(ws.getCell(g, 4), { value: b.boss, font: { bold: true, color: { argb: 'FF9B1C1C' } }, fill: fill('FFFDE2E2'), alignment: { horizontal: 'center', vertical: 'middle' }, border });
+    b.order.forEach((n, i) => {
+      const row = b.rows[n] || {};
+      [i + 1, nick(n), ...FIELDS.map(([f]) => f === 'dmg' ? (row.dmg === '' || row.dmg == null ? null : +row.dmg) : row[f] || '')]
+        .forEach((v, j) => Object.assign(ws.getCell(g + i, 9 + j), { value: v, border, alignment: { vertical: 'middle' } }));
+    });
+    const memoRow = g + ROWS;
+    if (b.memo) { ws.mergeCells(memoRow, 2, memoRow, 8); Object.assign(ws.getCell(memoRow, 2), { value: b.memo, alignment: { wrapText: true, vertical: 'top' }, font: { size: 9, color: { argb: 'FF5F6672' } } }); ws.getRow(memoRow).height = 30; }
+    for (let r = g; r < g + ROWS; r++) ws.getRow(r).height = 22;
+    r0 = memoRow + 2;
+  }
+  const buf = await wb.xlsx.writeBuffer();
+  download(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `${(plan.title || '배치표').replace(/[\\/:*?"<>|]/g, '')}_${today()}.xlsx`);
+};
+
+/* ---------------- 공통 UI ---------------- */
+function modal(html, cls) { $('modal').className = 'modal' + (cls ? ' ' + cls : ''); $('modal').onkeydown = null; $('modal').innerHTML = html; $('modalBg').classList.add('show'); $('modal').querySelectorAll('[data-close]').forEach(b => b.onclick = () => { closeModal(); render(); }); }
+function closeModal() { $('modalBg').classList.remove('show'); }
+// 창 바깥을 눌러도 닫히지 않음 (입력하던 내용이 날아가지 않도록). 닫기/취소 버튼으로만 닫힘
+let toastTimer;
+function toast(msg, warn) { const t = $('toast'); t.textContent = msg; t.className = 'toast show' + (warn ? ' warn' : ''); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.className = 'toast', 2600); }
+
+render();
+</script>
+</body>
+</html>
