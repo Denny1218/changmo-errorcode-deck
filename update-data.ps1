@@ -242,7 +242,15 @@ $data = [ordered]@{
   seasons     = @($seasons | Sort-Object { $_.postDate } -Descending)
 }
 $json = $data | ConvertTo-Json -Depth 8 -Compress
-[IO.File]::WriteAllText((Join-Path $root 'data.js'), "window.GENESIS_DATA = $json;`n", (New-Object Text.UTF8Encoding $false))
+# 내용이 같으면(만든 시각만 다르면) 파일을 그대로 둠 → 자동 갱신 때 쓸데없는 커밋이 안 생김
+$dataFile = Join-Path $root 'data.js'
+$stamp = '"generatedAt":"[^"]*"'
+$old = if (Test-Path $dataFile) { [IO.File]::ReadAllText($dataFile, [Text.Encoding]::UTF8) } else { '' }
 Write-Host ''
 Write-Host "완료: 캐릭터 $($chars.Count) / 무기 $($weapons.Count) / 방어구 $($armors.Count) / 장신구 $($accs.Count) / 에러코드 시즌 $($seasons.Count)"
-Write-Host "data.js 를 갱신했습니다. index.html 을 새로고침하세요."
+if (($old -replace $stamp, '').Trim() -eq ("window.GENESIS_DATA = $json;" -replace $stamp, '').Trim()) {
+  Write-Host "새 공지가 없어서 data.js 는 그대로예요."
+} else {
+  [IO.File]::WriteAllText($dataFile, "window.GENESIS_DATA = $json;`n", (New-Object Text.UTF8Encoding $false))
+  Write-Host "data.js 를 갱신했습니다. index.html 을 새로고침하세요."
+}
