@@ -70,15 +70,20 @@ service cloud.firestore {
 
     match /admins/{uid} {
       allow get: if signedIn() && request.auth.uid == uid;
+      allow list: if isAdmin();
       allow create: if signedIn() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['code'])
         && request.resource.data.code == get(/databases/$(db)/documents/secret/admin).data.code;
+      // 관리자 코드를 바꿀 때 다른 관리자 기기를 해제할 수 있음
+      allow delete: if isAdmin();
     }
 
-    // 관리자 코드는 처음 한 번만 만들 수 있음 (툴의 관리자 화면에서)
+    // 관리자 코드: 처음 한 번은 누구나 만들 수 있고, 그 뒤로는 관리자만 바꿀 수 있음
     match /secret/admin {
       allow read: if false;
       allow create: if signedIn() && request.resource.data.keys().hasOnly(['code'])
+        && request.resource.data.code is string && request.resource.data.code.size() == 64;
+      allow update: if isAdmin() && request.resource.data.keys().hasOnly(['code'])
         && request.resource.data.code is string && request.resource.data.code.size() == 64;
     }
 

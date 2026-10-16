@@ -201,6 +201,19 @@ window.ONLINE = (() => {
     catch (e) { throw new Error('관리자 코드가 맞지 않아요.'); }
     O.isAdmin = true; emit();
   };
+  // 관리자 코드 바꾸기 (관리자만). revokeOthers 면 이 기기 말고 다른 관리자 기기는 모두 해제
+  O.adminChange = async (newCode, revokeOthers) => {
+    need();
+    if (!O.isAdmin) throw new Error('관리자만 바꿀 수 있어요.');
+    const h = await O.sha256hex('gs-admin:' + newCode);
+    await fs.setDoc(fs.doc(db, 'secret', 'admin'), { code: h });
+    let removed = 0;
+    if (revokeOthers) {
+      const snap = await fs.getDocs(fs.collection(db, 'admins'));
+      for (const d of snap.docs) if (d.id !== O.uid) { await fs.deleteDoc(d.ref); removed++; }
+    }
+    return removed;
+  };
   O.blockDevice = async uid => { need(); await fs.setDoc(fs.doc(db, 'blocked', uid), { at: Date.now() }); };
   O.unblockDevice = async uid => { need(); await fs.deleteDoc(fs.doc(db, 'blocked', uid)); };
   O.listBlocked = async () => { need(); return (await fs.getDocs(fs.collection(db, 'blocked'))).docs.map(d => d.id); };
