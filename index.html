@@ -95,6 +95,8 @@ table.lo tr.total td{background:#f7f8fa;font-weight:600;padding:0 5px}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:40}
 .modal-bg.show{display:flex}
 .modal{background:#fff;border-radius:10px;padding:16px;width:min(860px,94vw);max-height:86vh;overflow:auto}
+.modal.view{width:min(1220px,96vw)}
+table.lo.ro td{padding:4px 5px;height:auto;white-space:normal;word-break:keep-all}
 .modal.wide{width:min(1180px,96vw);height:88vh;max-height:88vh;display:flex;flex-direction:column;padding:0;overflow:hidden}
 .cm-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
 .cm-head h2{margin:0}
@@ -152,6 +154,9 @@ table.lo tr.total td{background:#f7f8fa;font-weight:600;padding:0 5px}
   <select id="seasonSel" title="공지에서 가져온 에러코드 시즌"></select>
   <button id="btnCustomSeason" title="공지가 아직 없을 때 직접 시즌을 만듭니다">+ 직접 시즌</button>
   <button id="btnCopyPrev">지난 배치 가져오기</button>
+  <button id="btnBoard">게시판</button>
+  <button id="btnPublish">게시</button>
+  <span id="netStat" class="hint"></span>
   <span class="sp"></span>
   <button id="btnCopyImg" class="primary">이미지 복사</button>
   <button id="btnPng">PNG 저장</button>
@@ -203,6 +208,8 @@ table.lo tr.total td{background:#f7f8fa;font-weight:600;padding:0 5px}
 <script src="data.js"></script>
 <script src="seed.js"></script>
 <script src="skills.js"></script>
+<script src="firebase-config.js"></script>
+<script src="online.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script>
@@ -305,19 +312,33 @@ function allChars(withMeta = true) {
     if (k) { c.tiers = nTiers[k]; c.classes = classesOf(nTiers[k]); c.tiersFrom = 'namu'; }
   }
   if (!withMeta) return map;
-  // 캐릭터 관리에서 직접 고친 값이 공지/나무위키 값보다 우선
+  // 공용 캐릭터 정보(누가 어느 기기에서 고쳤든 모두 같은 값)가 공지/나무위키 값보다 우선
+  for (const [n, o] of Object.entries(sharedChars())) {
+    let c = map.get(n);
+    if (!c) { if (!o.custom) continue; c = { name: n, attr: '', tiers: {}, classes: [], artifacts: [], weapon: '', custom: true }; map.set(n, c); }
+    if (o.attr) c.attr = o.attr;
+    if (o.tiers) { c.tiers = o.tiers; c.classes = classesOf(o.tiers); }
+    if (o.artifacts) c.artifacts = o.artifacts;
+    if (o.weapon != null) c.weapon = o.weapon;
+    c.shared = o;
+  }
+  // 이 기기에서만 고친 값 (공용 기능이 켜져 있으면 '숨김'만 개인 설정으로 씀)
   for (const [n, m] of Object.entries(S.charMeta)) {
     const c = map.get(n); if (!c) continue;
-    if (m.attr) c.attr = m.attr;
-    if (m.tiers) { c.tiers = m.tiers; c.classes = classesOf(m.tiers); }
-    if (m.artifacts) c.artifacts = m.artifacts;
-    if (m.weapon != null) c.weapon = m.weapon;
+    if (!onlineOn()) {
+      if (m.attr) c.attr = m.attr;
+      if (m.tiers) { c.tiers = m.tiers; c.classes = classesOf(m.tiers); }
+      if (m.artifacts) c.artifacts = m.artifacts;
+      if (m.weapon != null) c.weapon = m.weapon;
+    }
     c.hidden = !!m.hidden;
   }
   return map;
 }
+function onlineOn() { return !!(window.ONLINE && ONLINE.enabled); }
+function sharedChars() { return (onlineOn() && ONLINE.shared) || {}; }
 let CHARS = allChars();
-const nick = n => (S.charMeta[n] && S.charMeta[n].nick) || DEFAULT_NICK[n] || n;
+const nick = n => { const s = sharedChars()[n]; return (s && s.nick) || (!onlineOn() && S.charMeta[n] && S.charMeta[n].nick) || DEFAULT_NICK[n] || n; };
 
 function seasonList() {
   const list = DATA.seasons.map(s => Object.assign({}, s, { label: `[${s.mode === '기사단' ? '기사단' : '개인'}] ${s.boss} ${s.season || ''} · ${fmtDate(s.postDate)} 공지` }));
@@ -624,7 +645,9 @@ function setRow(b, n, f, v) {
 /* ---------------- 스킬 선택 ---------------- */
 // 캐릭터의 스킬 목록: 붙여넣기로 가져온 것 → 나무위키 수집본 순. 변형 캐릭터(수제자 쿤 그리어 등)는 기본 캐릭터 목록으로 대신함
 function charSkills(n) {
-  const all = Object.assign({}, (window.GENESIS_SKILLS || {}).characters || {}, S.skillsExtra || {});
+  const sh = sharedChars()[n];
+  if (sh && sh.skills) return { list: sh.skills, from: n, shared: true };
+  const all = Object.assign({}, (window.GENESIS_SKILLS || {}).characters || {}, onlineOn() ? {} : S.skillsExtra || {});
   if (all[n]) return { list: all[n], from: n };
   const key = Object.keys(all).filter(k => n.includes(k)).sort((a, b) => b.length - a.length)[0];
   return key ? { list: all[key], from: key } : { list: [], from: '' };
@@ -755,7 +778,8 @@ $('btnCopyPrev').onclick = () => {
     <table><tr><th>시즌</th><th>제목</th><th>덱 구성</th><th></th></tr>
     ${rows.map(([k, p]) => `<tr><td>${esc(labels[k] || k)}</td><td>${esc(p.title || '')}</td><td class="hint">${p.blocks.map(b => `${b.deck}덱${b.label ? '(' + esc(b.label) + ')' : ''}: ${b.order.map(n => esc(nick(n))).join(' ')}`).join('<br>')}</td>
       <td><button class="sm primary" data-copy="${esc(k)}">가져오기</button></td></tr>`).join('') || '<tr><td colspan="4" class="hint">저장된 다른 배치가 없어요.</td></tr>'}
-    </table><div class="foot"><button data-close>닫기</button></div>`);
+    </table><div class="foot">${onlineOn() ? '<button id="cpBoard">게시판 글에서 불러오기</button>' : ''}<button data-close>닫기</button></div>`);
+  if ($('cpBoard')) $('cpBoard').onclick = openBoard;
   $('modal').querySelectorAll('[data-copy]').forEach(btn => btn.onclick = () => {
     const src = S.plans[btn.dataset.copy], plan = curPlan();
     plan.blocks = JSON.parse(JSON.stringify(src.blocks)).map(b => Object.assign(b, { boss: cur.boss }));
@@ -786,7 +810,12 @@ $('btnCustomSeason').onclick = () => {
 const CM = { sel: null, draft: null, orig: '', q: '', filter: 'all', paste: false, adding: false };
 const TIER_KEYS = ['Tier3', 'Tier2', 'Tier1'];
 const SK_TYPES = ['고유', '공통', '핵심', '초필살기'];
-function baseOf(n) { return allChars(false).get(n) || { name: n, tiers: {}, artifacts: [], weapon: '', attr: '' }; }
+function baseOf(n) {
+  const b = allChars(false).get(n);
+  if (b) return b;
+  const sh = sharedChars()[n];   // 누군가 공용으로 새로 추가한 캐릭터
+  return { name: n, tiers: {}, artifacts: [], weapon: '', attr: '', custom: !!(sh && sh.custom) || S.customChars.some(c => c.name === n) };
+}
 function namuSkills(n) {
   const all = (window.GENESIS_SKILLS || {}).characters || {};
   if (all[n]) return { list: all[n], from: n };
@@ -817,12 +846,55 @@ const cmConfirmLeave = () => !cmDirty() || confirm('저장하지 않은 변경�
 function cmSelect(n) {
   CM.sel = n; CM.adding = false; CM.paste = false;
   CM.draft = n ? makeDraft(n) : null; CM.orig = JSON.stringify(CM.draft);
-  cmRenderList(); cmRenderDetail(); if ($('cmDetail')) $('cmDetail').scrollTop = 0;
+  CM.baseRev = n ? ((sharedChars()[n] || {}).rev || 0) : 0; CM.hist = null;
+  cmRenderList(); cmRenderDetail(); cmRenderOnline(); if ($('cmDetail')) $('cmDetail').scrollTop = 0;
+}
+// 머리글: 공용 연결 상태 + (이 기기에서만 고쳐 둔 값이 있으면) 공용으로 올리기 버튼
+function localCharEdits() {
+  const names = new Set([...Object.keys(S.charMeta || {}), ...Object.keys(S.skillsExtra || {})]);
+  const out = {};
+  for (const n of names) {
+    const m = S.charMeta[n] || {}, e = {};
+    for (const k of ['nick', 'attr', 'tiers', 'artifacts', 'weapon']) if (m[k] != null) e[k] = m[k];
+    if (S.skillsExtra && S.skillsExtra[n]) e.skills = S.skillsExtra[n];
+    if (S.customChars.some(c => c.name === n)) e.custom = true;
+    if (Object.keys(e).length) out[n] = e;
+  }
+  for (const c of S.customChars) if (!out[c.name]) out[c.name] = { custom: true, attr: c.attr || '' };
+  return out;
+}
+function cmRenderOnline() {
+  const el = $('cmOnline'); if (!el) return;
+  if (!onlineOn()) { el.innerHTML = '<span class="hint">공용 기능 꺼짐 · 이 기기에만 저장돼요</span>'; return; }
+  if (!ONLINE.ready) { el.innerHTML = `<span class="hint">${ONLINE.error ? '공용 서버 연결 실패 · ' + esc(ONLINE.error) : '공용 서버 연결 중…'}</span>`; return; }
+  const loc = localCharEdits(), cnt = Object.keys(loc).length;
+  el.innerHTML = `<span class="hint" style="color:var(--ok)">● 공용 저장 · 모든 기기·모든 사람에게 같은 정보</span>`
+    + (cnt ? ` <button class="sm" id="cmUpload" title="${esc(Object.keys(loc).map(nick).join(', '))}">이 기기에서만 고쳐 둔 ${cnt}명 공용으로 올리기</button>` : '');
+  if (cnt) $('cmUpload').onclick = async () => {
+    if (!confirm(`이 기기에서만 고쳐 둔 캐릭터 ${cnt}명(${Object.keys(loc).slice(0, 8).map(nick).join(', ')}${cnt > 8 ? ' …' : ''})의 정보를 공용으로 올릴까요?\n이미 공용에 있는 같은 항목은 이 기기 값으로 바뀌어요.`)) return;
+    const by = askEditorNick(); if (!by) return;
+    try {
+      await ONLINE.saveChars(loc, by);
+      for (const n of Object.keys(loc)) { const h = S.charMeta[n] && S.charMeta[n].hidden; if (h) S.charMeta[n] = { hidden: true }; else delete S.charMeta[n]; }
+      S.skillsExtra = {}; S.customChars = []; save();
+      toast(`${cnt}명의 정보를 공용으로 올렸어요`);
+    } catch (e) { toast('올리지 못했어요: ' + e.message, true); }
+  };
+}
+// 공용으로 고칠 때 기록에 남는 이름 (한 번 물어보고 기억)
+function askEditorNick() {
+  let v = ''; try { v = localStorage.getItem('gs-nick') || ''; } catch (e) {}
+  if (!v) {
+    v = (prompt('수정 기록에 남길 닉네임을 적어 주세요 (한 번만 물어봐요)', '') || '').trim().slice(0, 20);
+    if (!v) return '';
+    try { localStorage.setItem('gs-nick', v); } catch (e) {}
+  }
+  return v;
 }
 
 function openCharManager(n) {
   CM.q = ''; CM.filter = 'all';
-  modal(`<div class="cm-head"><h2>캐릭터 관리</h2><span class="hint">공지·나무위키에 없는 정보는 여기서 직접 넣고 고쳐요. 고친 뒤 꼭 [저장]을 눌러 주세요.</span><span style="flex:1"></span><button id="cmClose">닫기</button></div>
+  modal(`<div class="cm-head"><h2>캐릭터 관리</h2><span class="hint">공지·나무위키에 없는 정보는 여기서 직접 넣고 고쳐요. 고친 뒤 꼭 [저장]을 눌러 주세요.</span><span style="flex:1"></span><span id="cmOnline"></span><button id="cmClose">닫기</button></div>
     <div class="cm-body">
       <div class="cm-left">
         <div class="cm-tools">
@@ -875,11 +947,12 @@ function cmRenderDetail() {
   if (CM.adding) return cmRenderNew(el);
   const d = CM.draft;
   if (!d) { el.innerHTML = '<div class="cm-empty">왼쪽에서 캐릭터를 고르세요.<br><br>빠진 정보만 보려면 목록 위에서 "정보가 빠진 캐릭터만"을 고르면 돼요.</div>'; el.oninput = el.onclick = el.onkeydown = null; cmUpdateDirty(); return; }
-  const base = baseOf(d.name), nsk = namuSkills(d.name), own = !!(S.skillsExtra && S.skillsExtra[d.name]);
+  const base = baseOf(d.name), nsk = namuSkills(d.name), shc = sharedChars()[d.name];
+  const own = !!((shc && shc.skills) || (!onlineOn() && S.skillsExtra && S.skillsExtra[d.name]));
   const baseTierCount = Object.values(base.tiers || {}).flat().length;
   const allCls = TIER_KEYS.flatMap(k => d.tiers[k]);
   el.innerHTML = `
-    <div class="cm-sec"><h3>기본 정보 <span class="src">${base.released ? `공지 ${fmtDate(base.released)}` : base.custom ? '직접 추가한 캐릭터' : '시즌 공지에 이름만 나온 캐릭터'}</span></h3>
+    <div class="cm-sec"><h3>기본 정보 <span class="src">${base.released ? `공지 ${fmtDate(base.released)}` : base.custom ? '직접 추가한 캐릭터' : '시즌 공지에 이름만 나온 캐릭터'}${shc && shc.by ? ` · 마지막 공용 수정: ${esc(shc.by)} ${new Date(shc.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}</span></h3>
       <div class="cm-grid">
         <label>정식 이름</label><div><b>${esc(d.name)}</b>${base.custom ? ' <button class="sm" id="cmDel">이 캐릭터 삭제</button>' : ''}</div>
         <label>줄임말</label><div><input type="text" data-f="nick" value="${esc(d.nick)}" style="width:160px"> <span class="hint">배치표·이미지에 보이는 이름</span></div>
@@ -912,7 +985,9 @@ function cmRenderDetail() {
         <textarea id="cmPaste" style="width:100%;height:110px;margin-top:4px" placeholder="여기에 붙여넣기 (Ctrl+V)"></textarea>
         <div id="cmPastePrev" class="hint"></div>
         <p style="margin:6px 0 0"><button id="cmPasteAdd">지금 목록에 더하기</button> <button id="cmPasteReplace">지금 목록을 바꾸기</button></p></div>` : ''}
-    </div>`;
+    </div>
+    ${onlineOn() ? `<div class="cm-sec"><h3>수정 기록 <span class="src">누가 언제 고쳤는지 · 잘못 고친 건 되돌릴 수 있어요</span></h3>
+      <div id="cmHist">${CM.hist ? cmHistHtml(CM.hist) : '<button id="cmHistLoad">기록 불러오기</button>'}</div></div>` : ''}`;
   const d2 = CM.draft;
   el.oninput = e => {
     const f = e.target.dataset.f;
@@ -948,8 +1023,41 @@ function cmRenderDetail() {
     }
     if (t.id === 'cmSkReset') { d2.skills = skillRows(nsk.list); cmRenderDetail(); return; }
     if (t.id === 'cmDel') { cmDeleteChar(d2.name); return; }
+    if (t.id === 'cmHistLoad') {
+      t.disabled = true; t.textContent = '불러오는 중…';
+      ONLINE.history(d2.name).then(h => { CM.hist = h; if (CM.draft === d2) cmRenderDetail(); }).catch(err => { toast('기록을 불러오지 못했어요: ' + err.message, true); t.disabled = false; t.textContent = '기록 불러오기'; });
+      return;
+    }
+    if (t.dataset.restore != null) {
+      const h = CM.hist[+t.dataset.restore]; let snap = null; try { snap = JSON.parse(h.before); } catch (err) {}
+      if (!confirm(`${new Date(h.at).toLocaleString('ko-KR')} ${h.by}님이 고치기 전 상태로 되돌릴까요?\n되돌린 내용을 확인하고 [저장]을 눌러야 반영돼요.`)) return;
+      const keepHidden = d2.hidden;
+      Object.assign(d2, draftFromEntry(d2.name, snap), { hidden: keepHidden });
+      cmRenderDetail(); toast('되돌린 내용을 확인하고 [저장]을 눌러 주세요'); return;
+    }
+    if (t.dataset.block) {
+      if (!confirm('이 기기가 더 이상 공용 정보를 고치거나 게시하지 못하게 막을까요?')) return;
+      ONLINE.blockDevice(t.dataset.block).then(() => toast('막았어요')).catch(err => toast('막지 못했어요: ' + err.message, true));
+      return;
+    }
   };
   cmUpdateDirty();
+}
+// 공용 값(entry) 기준으로 편집 화면 값 만들기 (entry 가 없으면 공지/나무위키 원래 값)
+function draftFromEntry(n, e) {
+  const b = baseOf(n); e = e || {};
+  return { name: n, nick: e.nick || DEFAULT_NICK[n] || n, attr: e.attr || b.attr || '', hidden: false, weapon: e.weapon != null ? e.weapon : (b.weapon || ''),
+    artifacts: [...(e.artifacts || b.artifacts || [])], tiers: normTiers(e.tiers || b.tiers), skills: skillRows(e.skills || namuSkills(n).list) };
+}
+function cmHistHtml(list) {
+  if (!list.length) return '<div class="hint">아직 수정 기록이 없어요.</div>';
+  const fields = { nick: '줄임말', attr: '속성', tiers: '클래스', artifacts: '아티팩트', weapon: '무기', skills: '스킬' };
+  const diff = h => { let a = {}, b = {}; try { a = JSON.parse(h.before) || {}; b = JSON.parse(h.after) || {}; } catch (e) {}
+    const ch = Object.keys(fields).filter(k => JSON.stringify(a[k]) !== JSON.stringify(b[k])).map(k => fields[k]);
+    return h.after === 'null' ? '공용 값 지움' : ch.length ? ch.join(', ') + ' 수정' : '수정'; };
+  return `<table class="sk-table"><tr><th style="width:130px">언제</th><th style="width:90px">누가</th><th>무엇을</th><th style="width:150px"></th></tr>
+    ${list.map((h, i) => `<tr><td>${esc(new Date(h.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }))}</td><td>${esc(h.by)}</td><td>${esc(diff(h))}</td>
+      <td><button class="sm" data-restore="${i}">이 수정 전으로</button>${ONLINE.isAdmin && h.uid !== ONLINE.uid ? ` <button class="sm" data-block="${esc(h.uid)}" title="이 기기의 편집 막기">막기</button>` : ''}</td></tr>`).join('')}</table>`;
 }
 
 function cmRenderNew(el) {
@@ -967,8 +1075,15 @@ function cmRenderNew(el) {
     const n = $('cnName').value.trim();
     if (!n) { toast('이름을 입력하세요', true); return; }
     if (CHARS.has(n)) { toast('이미 있는 캐릭터예요', true); cmSelect(n); return; }
-    S.customChars.push({ name: n, attr: $('cnAttr').value }); save(); CHARS = allChars();
-    toast(`${n}을(를) 추가했어요`); cmSelect(n);
+    const attr = $('cnAttr').value;
+    if (!onlineOn()) { S.customChars.push({ name: n, attr }); save(); CHARS = allChars(); toast(`${n}을(를) 추가했어요`); cmSelect(n); return; }
+    if (!ONLINE.ready) { toast('공용 서버에 연결되는 중이에요. 잠시 후 다시 해 주세요', true); return; }
+    const by = askEditorNick(); if (!by) return;
+    ONLINE.saveChar(n, { custom: true, attr }, 0, by).then(r => {
+      if (r.conflict) toast('같은 이름의 캐릭터를 방금 다른 사람이 추가했어요');
+      else ONLINE.shared[n] = { custom: true, attr, rev: 1, by, at: Date.now() };
+      CHARS = allChars(); toast(`${n}을(를) 공용으로 추가했어요`); cmSelect(n);
+    }).catch(e => toast('추가하지 못했어요: ' + e.message, true));
   };
   $('cnOk').onclick = ok;
   $('cnName').onkeydown = e => { if (e.key === 'Enter') ok(); };
@@ -977,45 +1092,269 @@ function cmRenderNew(el) {
 
 function cmDeleteChar(n) {
   const used = Object.values(S.plans).some(p => p.blocks.some(b => b.order.includes(n)));
-  if (!confirm(`${n}을(를) 삭제할까요?${used ? '\n이 캐릭터가 들어간 배치에서도 빠져요.' : ''}`)) return;
-  S.customChars = S.customChars.filter(c => c.name !== n);
-  delete S.charMeta[n]; delete S.history[n]; if (S.skillsExtra) delete S.skillsExtra[n];
-  for (const p of Object.values(S.plans)) for (const b of p.blocks) removeFromBlock(b, n);
-  save(); CHARS = allChars(); CM.draft = null; CM.orig = 'null'; cmSelect(null); toast('삭제했어요');
+  if (!confirm(`${n}을(를) 삭제할까요?${used ? '\n이 캐릭터가 들어간 (이 기기의) 배치에서도 빠져요.' : ''}${onlineOn() ? '\n공용에서 지워져서 다른 사람에게도 안 보여요.' : ''}`)) return;
+  const done = () => {
+    S.customChars = S.customChars.filter(c => c.name !== n);
+    delete S.charMeta[n]; delete S.history[n]; if (S.skillsExtra) delete S.skillsExtra[n];
+    for (const p of Object.values(S.plans)) for (const b of p.blocks) removeFromBlock(b, n);
+    save(); CHARS = allChars(); CM.draft = null; CM.orig = 'null'; cmSelect(null); toast('삭제했어요');
+  };
+  if (!onlineOn() || !sharedChars()[n]) return done();
+  const by = askEditorNick(); if (!by) return;
+  ONLINE.saveChar(n, null, CM.baseRev, by).then(r => {
+    if (r.conflict) { toast('다른 사람이 방금 이 캐릭터를 고쳤어요. 다시 확인해 주세요', true); cmSelect(n); return; }
+    delete ONLINE.shared[n]; done();
+  }).catch(e => toast('삭제하지 못했어요: ' + e.message, true));
 }
 
 function cmUpdateDirty() {
   const dirty = cmDirty();
-  if ($('cmDirty')) $('cmDirty').textContent = dirty ? '● 저장하지 않은 변경이 있어요' : (CM.draft ? '' : '');
-  if ($('cmSave')) $('cmSave').disabled = !CM.draft;
+  if ($('cmDirty')) $('cmDirty').textContent = CM.saving ? '저장하는 중…' : dirty ? '● 저장하지 않은 변경이 있어요' : '';
+  if ($('cmSave')) $('cmSave').disabled = !CM.draft || !!CM.saving;
   if ($('cmRevert')) $('cmRevert').disabled = !dirty;
 }
 
-function cmSave() {
-  const d = CM.draft; if (!d) return;
-  if (!cmDirty()) { toast('바뀐 내용이 없어요'); return; }
-  const base = baseOf(d.name), orig = JSON.parse(CM.orig);
-  const m = S.charMeta[d.name] = S.charMeta[d.name] || {};
-  // 공지/나무위키 값과 같은 항목은 따로 저장하지 않음 → 다음 공지 갱신을 그대로 받음
-  const nk = d.nick.trim(); if (nk && nk !== (DEFAULT_NICK[d.name] || d.name)) m.nick = nk; else delete m.nick;
-  if (d.attr !== (base.attr || '')) m.attr = d.attr; else delete m.attr;
-  if (d.hidden) m.hidden = true; else delete m.hidden;
+// 편집 화면 값 → 저장할 값. 공지/나무위키 값과 같은 항목은 넣지 않음 (다음 공지 갱신을 그대로 받도록)
+function entryFromDraft(d) {
+  const base = baseOf(d.name), e = {};
+  const nk = d.nick.trim(); if (nk && nk !== (DEFAULT_NICK[d.name] || d.name)) e.nick = nk;
+  if (d.attr !== (base.attr || '')) e.attr = d.attr;
   const pack = t => { const o = {}; for (const k of TIER_KEYS) if (t[k].length) o[k] = t[k]; return o; };
-  if (JSON.stringify(pack(d.tiers)) !== JSON.stringify(pack(normTiers(base.tiers)))) m.tiers = pack(d.tiers); else delete m.tiers;
-  if (JSON.stringify(d.artifacts) !== JSON.stringify(base.artifacts || [])) m.artifacts = d.artifacts; else delete m.artifacts;
-  if (d.weapon !== (base.weapon || '')) m.weapon = d.weapon; else delete m.weapon;
-  if (!Object.keys(m).length) delete S.charMeta[d.name];
-  if (JSON.stringify(d.skills) !== JSON.stringify(orig.skills)) {
-    const seen = new Set();
-    const rows = d.skills.map(r => ({ n: r.n.trim(), t: r.t, tp: String(r.tp).trim(), cls: r.cls.trim() })).filter(r => r.n && !seen.has(r.n) && seen.add(r.n));
-    S.skillsExtra = S.skillsExtra || {};
-    if (JSON.stringify(rows) === JSON.stringify(skillRows(namuSkills(d.name).list))) delete S.skillsExtra[d.name];
-    else S.skillsExtra[d.name] = rows.map(r => Object.assign({ n: r.n, t: r.t === '초필살기' ? '고유' : r.t },
+  if (JSON.stringify(pack(d.tiers)) !== JSON.stringify(pack(normTiers(base.tiers)))) e.tiers = pack(d.tiers);
+  if (JSON.stringify(d.artifacts) !== JSON.stringify(base.artifacts || [])) e.artifacts = d.artifacts;
+  if (d.weapon !== (base.weapon || '')) e.weapon = d.weapon;
+  const seen = new Set();
+  const rows = d.skills.map(r => ({ n: r.n.trim(), t: r.t, tp: String(r.tp).trim(), cls: r.cls.trim() })).filter(r => r.n && !seen.has(r.n) && seen.add(r.n));
+  if (JSON.stringify(rows) !== JSON.stringify(skillRows(namuSkills(d.name).list)))
+    e.skills = rows.map(r => Object.assign({ n: r.n, t: r.t === '초필살기' ? '고유' : r.t },
       r.tp ? { tp: 'TP ' + r.tp } : {}, r.cls ? { cls: r.cls } : {}, r.t === '초필살기' ? { ult: true } : {}));
+  if (base.custom) e.custom = true;
+  return e;
+}
+
+async function cmSave() {
+  const d = CM.draft; if (!d || CM.saving) return;
+  if (!cmDirty()) { toast('바뀐 내용이 없어요'); return; }
+  // 숨김은 어디서든 이 기기만의 설정
+  const setHidden = () => { const m = S.charMeta[d.name] = S.charMeta[d.name] || {}; if (d.hidden) m.hidden = true; else delete m.hidden; if (!Object.keys(m).length) delete S.charMeta[d.name]; };
+  const e = entryFromDraft(d);
+  if (!onlineOn()) {
+    setHidden();
+    const m = S.charMeta[d.name] = Object.assign(S.charMeta[d.name] || {}, { nick: undefined, attr: undefined, tiers: undefined, artifacts: undefined, weapon: undefined });
+    for (const k of ['nick', 'attr', 'tiers', 'artifacts', 'weapon']) { if (e[k] != null) m[k] = e[k]; else delete m[k]; }
+    if (!Object.keys(m).length) delete S.charMeta[d.name];
+    S.skillsExtra = S.skillsExtra || {}; if (e.skills) S.skillsExtra[d.name] = e.skills; else delete S.skillsExtra[d.name];
+    save(); CHARS = allChars(); toast(`${nick(d.name)} 정보를 저장했어요`); cmSelect(d.name); return;
   }
-  save(); CHARS = allChars(); toast(`${nick(d.name)} 정보를 저장했어요`); cmSelect(d.name);
+  // 바뀐 게 숨김뿐이면 공용에 쓰지 않음
+  const orig = JSON.parse(CM.orig);
+  const onlyHidden = JSON.stringify(Object.assign({}, d, { hidden: 0 })) === JSON.stringify(Object.assign({}, orig, { hidden: 0 }));
+  if (onlyHidden) { setHidden(); save(); CHARS = allChars(); toast('이 기기에서 숨김 설정을 바꿨어요'); cmSelect(d.name); return; }
+  if (!ONLINE.ready) { toast('공용 서버에 연결되는 중이에요. 잠시 후 다시 저장해 주세요', true); return; }
+  const by = askEditorNick(); if (!by) return;
+  CM.saving = true; cmUpdateDirty();
+  try {
+    const hasAny = Object.keys(e).some(k => k !== 'custom') || e.custom;
+    let r = await ONLINE.saveChar(d.name, hasAny ? e : null, CM.baseRev, by);
+    if (r.conflict) {
+      const who = r.current ? `${r.current.by}님이 ${new Date(r.current.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}에` : '다른 사람이';
+      if (!confirm(`${who} 이 캐릭터를 먼저 고쳤어요.\n\n[확인]: 내 수정 내용으로 덮어쓰기\n[취소]: 저장하지 않고 상대가 고친 내용 보기`)) {
+        CM.saving = false; cmSelect(d.name); toast('다른 사람이 고친 내용을 불러왔어요'); return;
+      }
+      r = await ONLINE.saveChar(d.name, hasAny ? e : null, r.current ? r.current.rev || 0 : 0, by);
+      if (r.conflict) throw new Error('그 사이에 또 바뀌었어요. 다시 시도해 주세요');
+    }
+    setHidden(); save();
+    // 서버에서 새 값이 내려오기 전에 화면부터 바꿈
+    if (hasAny) ONLINE.shared[d.name] = Object.assign({}, e, { rev: CM.baseRev + 1, by, at: Date.now() }); else delete ONLINE.shared[d.name];
+    CM.saving = false; CHARS = allChars(); toast(`${nick(d.name)} 정보를 공용으로 저장했어요`); cmSelect(d.name);
+  } catch (err) {
+    CM.saving = false; cmUpdateDirty(); toast('저장하지 못했어요: ' + err.message, true);
+  }
 }
 $('btnChars').onclick = () => openCharManager();
+
+/* ---------------- 게시판 (공용) ---------------- */
+// 글 목록(제목·보스·올린 사람·날짜)은 누구나 보이고, 배치 내용은 글 암호로 잠겨 있어서 암호를 아는 사람만 열고 고치고 지울 수 있음
+const fmtTime = t => new Date(t).toLocaleString('ko-KR', { year: '2-digit', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+const getNick = () => { try { return localStorage.getItem('gs-nick') || ''; } catch (e) { return ''; } };
+function needOnline(what) {
+  if (!onlineOn()) {
+    modal(`<h2>${esc(what || '게시판')}</h2><p>게시판은 공용 서버(Firebase)를 연결해야 쓸 수 있어요.</p><p class="hint">관리자가 firebase-config.js 를 설정하면 켜져요.</p><div class="foot"><button data-close>닫기</button></div>`);
+    return false;
+  }
+  if (!ONLINE.ready) { toast(ONLINE.error ? '공용 서버 연결 실패: ' + ONLINE.error : '공용 서버에 연결되는 중이에요. 잠시 후 다시 해 주세요', true); return false; }
+  return true;
+}
+async function openBoard() {
+  if (!needOnline()) return;
+  modal(`<div style="display:flex;align-items:center;gap:8px"><h2 style="margin:0">게시판</h2><span class="hint">제목은 누구나 보이고, 내용은 그 글의 암호를 아는 사람만 열 수 있어요.</span><span style="flex:1"></span><button id="bdAdmin" class="sm">${ONLINE.isAdmin ? '관리자 ✓' : '관리자'}</button></div>
+    <div id="bdBody" style="margin-top:10px"><div class="hint">불러오는 중…</div></div>
+    <div class="foot"><button id="bdPublish">지금 배치 게시하기</button><button data-close>닫기</button></div>`, 'view');
+  $('bdAdmin').onclick = openAdmin;
+  $('bdPublish').onclick = () => openPublish();
+  try {
+    const list = await ONLINE.listPosts();
+    if (!$('bdBody')) return;
+    $('bdBody').innerHTML = list.length ? `<table><tr><th>제목</th><th>보스 · 시즌</th><th>올린 사람</th><th>고친 날</th><th></th></tr>
+      ${list.map(p => `<tr><td><a href="#" data-open="${esc(p.id)}"><b>${esc(p.title)}</b></a></td><td>${esc(p.boss || '')} <span class="hint">${esc(p.season || '')}</span></td><td>${esc(p.author)}</td><td class="hint">${esc(fmtTime(p.updatedAt))}</td>
+        <td class="hint">${ONLINE.knownPw(p.id) ? '암호 기억됨' : '잠김'}</td></tr>`).join('')}</table>`
+      : '<div class="hint">아직 올라온 글이 없어요. [지금 배치 게시하기]로 첫 글을 올려 보세요.</div>';
+    $('bdBody').querySelectorAll('[data-open]').forEach(a => a.onclick = e => { e.preventDefault(); openPost(list.find(x => x.id === a.dataset.open)); });
+  } catch (e) { if ($('bdBody')) $('bdBody').innerHTML = `<div style="color:var(--warn)">목록을 불러오지 못했어요: ${esc(e.message)}</div>`; }
+}
+async function openPost(p) {
+  const tryOpen = async pw => { try { return await ONLINE.openPost(p.id, pw); } catch (e) { return { err: e.message }; } };
+  const known = ONLINE.knownPw(p.id);
+  if (known) { const r = await tryOpen(known); if (!r.err) return showPost(p, r, known); ONLINE.forgetPw(p.id); }
+  modal(`<h2>${esc(p.title)}</h2><p class="hint">${esc(p.author)} · ${esc(fmtTime(p.updatedAt))}</p>
+    <p>이 글의 암호를 넣어 주세요.</p>
+    <p><input type="text" id="poPw" style="width:220px" autocomplete="off"> <button class="primary" id="poOk">열기</button></p>
+    <div id="poErr" style="color:var(--warn);font-size:12px"></div>
+    ${ONLINE.isAdmin ? '<p class="hint">관리자는 암호 없이 지울 수 있어요. <button class="sm" id="poAdminDel">이 글 삭제</button></p>' : ''}
+    <div class="foot"><button id="poBack">목록으로</button></div>`);
+  $('poBack').onclick = openBoard;
+  if ($('poAdminDel')) $('poAdminDel').onclick = () => deletePostFlow(p, '');
+  const go = async () => {
+    const pw = $('poPw').value; if (!pw) return;
+    $('poOk').disabled = true; $('poErr').textContent = '확인하는 중…';
+    const r = await tryOpen(pw);
+    if (r.err) { $('poErr').textContent = r.err; $('poOk').disabled = false; return; }
+    showPost(p, r, pw);
+  };
+  $('poOk').onclick = go; $('poPw').onkeydown = e => { if (e.key === 'Enter') go(); }; $('poPw').focus();
+}
+function showPost(p, res, pw) {
+  const c = res.content || {}, plan = c.plan || { blocks: [] };
+  modal(`<h2>${esc(p.title)}</h2><p class="hint">${esc(c.season ? c.season.label : (p.season || ''))} · ${esc(p.author)} · ${esc(fmtTime(p.updatedAt))}</p>
+    <div id="poView" style="background:#fff;padding:6px">${staticPlanHtml(plan)}</div>
+    <div class="foot"><button id="poBack">목록으로</button><span style="flex:1"></span>
+      <button id="poDel">삭제</button><button id="poImg">이미지 복사</button><button class="primary" id="poLoad">내 편집 화면으로 불러오기</button></div>`, 'view');
+  $('poBack').onclick = openBoard;
+  $('poDel').onclick = () => deletePostFlow(p, pw);
+  $('poImg').onclick = async () => {
+    if (!window.html2canvas) { toast('이미지 기능을 불러오지 못했어요', true); return; }
+    const cv = await html2canvas($('poView'), { scale: 2, backgroundColor: '#ffffff', logging: false });
+    copyCanvas(cv, p.title);
+  };
+  $('poLoad').onclick = () => loadPostIntoEditor(p, c);
+}
+function loadPostIntoEditor(p, c) {
+  const s = c.season || {};
+  let key = s.key;
+  if (!key || !seasonList().some(x => x.key === key)) {
+    key = 'post-' + p.id;
+    if (!S.customSeasons.some(x => x.key === key)) S.customSeasons.push({ key, name: (s.label || p.title).replace(/^\[[^\]]*\]\s*/, ''), boss: s.boss || p.boss || '디에네', mode: s.mode || '기사단', season: '', allowed: s.allowed || [], buffChars: [], randomBuffChars: [] });
+  }
+  const prev = S.currentSeason;
+  S.currentSeason = key;
+  const plan = curPlan();
+  if (plan.blocks.some(b => b.order.length) && !(plan.source && plan.source.id === p.id)
+    && !confirm('이 시즌에 짜 둔 내 배치가 게시판 글 내용으로 바뀌어요. 계속할까요?')) { S.currentSeason = prev; return; }
+  plan.blocks = JSON.parse(JSON.stringify((c.plan || {}).blocks || []));
+  plan.title = (c.plan || {}).title || p.title;
+  plan.source = { id: p.id, title: p.title };
+  activeBlock = 0; touch(); closeModal(); render();
+  toast('게시판 글을 불러왔어요. 고친 뒤 [게시]에서 "원래 글 고치기"로 다시 올릴 수 있어요');
+}
+async function deletePostFlow(p, pw) {
+  if (!confirm(`"${p.title}" 글을 지울까요? 되돌릴 수 없어요.`)) return;
+  try { await ONLINE.deletePost(p.id, pw); toast('글을 지웠어요'); openBoard(); }
+  catch (e) { toast('지우지 못했어요: ' + e.message, true); }
+}
+function openPublish() {
+  if (!needOnline('게시하기')) return;
+  const plan = curPlan(), s = curSeason();
+  if (!plan || !plan.blocks.some(b => b.order.length)) { toast('게시할 배치가 없어요. 먼저 캐릭터를 배치하세요', true); return; }
+  const src = plan.source, srcPw = src ? ONLINE.knownPw(src.id) : '';
+  let lastPw = ''; try { lastPw = localStorage.getItem('gs-last-pw') || ''; } catch (e) {}
+  modal(`<h2>배치 게시하기</h2>
+    <p class="hint">지금 화면의 배치(1덱·2덱·장비표·메모)를 게시판에 올려요. 내용은 글 암호로 잠겨서, 암호를 아는 사람만 보고 고치고 지울 수 있어요.</p>
+    ${src ? `<p><label><input type="radio" name="pbMode" value="update"${srcPw ? ' checked' : ''}> 원래 글 고치기: <b>${esc(src.title)}</b></label><br>
+      <label><input type="radio" name="pbMode" value="new"${srcPw ? '' : ' checked'}> 새 글로 올리기</label></p>` : ''}
+    <div class="cm-grid" style="grid-template-columns:80px minmax(0,1fr)">
+      <label>제목</label><div><input type="text" id="pbTitle" maxlength="80" style="width:100%" value="${esc(src ? src.title : (plan.title || ''))}"></div>
+      <label>닉네임</label><div><input type="text" id="pbAuthor" maxlength="30" style="width:200px" value="${esc(getNick())}"></div>
+      <label>글 암호</label><div><input type="text" id="pbPw" style="width:200px" autocomplete="off" value="${esc(srcPw || lastPw)}">
+        <div class="hint">4자 이상. 이 암호를 아는 사람만 보고·고치고·지울 수 있어요. 잊으면 되찾을 수 없어요. 같은 암호를 계속 쓰면 기사단 공용 암호처럼 쓸 수 있어요.</div></div>
+    </div>
+    <div id="pbErr" style="color:var(--warn);font-size:12px;margin-top:6px"></div>
+    <div class="foot"><button data-close>취소</button><button class="primary" id="pbOk">게시</button></div>`);
+  $('pbOk').onclick = async () => {
+    const mode = (document.querySelector('input[name="pbMode"]:checked') || {}).value || 'new';
+    const title = $('pbTitle').value.trim(), author = $('pbAuthor').value.trim(), password = $('pbPw').value;
+    if (!title || !author) { $('pbErr').textContent = '제목과 닉네임을 적어 주세요'; return; }
+    if (password.length < 4) { $('pbErr').textContent = '글 암호는 4자 이상이어야 해요'; return; }
+    $('pbOk').disabled = true; $('pbErr').textContent = '올리는 중…';
+    try {
+      const content = { v: 1, plan: { title: plan.title || title, blocks: plan.blocks }, season: s ? { key: s.key, label: s.label, boss: s.boss, mode: s.mode, allowed: s.allowed || [] } : {} };
+      const id = await ONLINE.publish({ postId: mode === 'update' ? src.id : null, title, author, password, boss: s ? s.boss : '',
+        season: s ? (s.season ? `${s.mode || ''} ${s.season}`.trim() : s.label) : '', content });
+      plan.source = { id, title }; touch();
+      try { localStorage.setItem('gs-nick', author); localStorage.setItem('gs-last-pw', password); } catch (e) {}
+      closeModal(); render(); toast(mode === 'update' ? '글을 고쳤어요' : '게시판에 올렸어요. 글 암호를 함께 볼 사람들에게 알려 주세요');
+    } catch (e) { $('pbOk').disabled = false; $('pbErr').textContent = '올리지 못했어요: ' + e.message; }
+  };
+}
+// 게시판 글 미리보기 (편집 불가 배치표)
+function staticPlanHtml(plan) {
+  return (plan.blocks || []).map(b => {
+    let g = '<div class="board">';
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      if (BOSS_CELLS.some(([a, d]) => a === r && d === c)) { if (r === 0 && c === 2) g += `<div class="boss">${esc(b.boss)}</div>`; continue; }
+      const n = b.cells[r + ',' + c], seat = seatType(b.boss, r, c);
+      if (!seat && !n) { g += `<div class="cell void" style="grid-row:${r + 1};grid-column:${c + 1}"></div>`; continue; }
+      g += `<div class="cell ${n ? 'on' : 'seat-' + seat}" style="grid-row:${r + 1};grid-column:${c + 1}">${n ? esc(nick(n)) : ''}</div>`;
+    }
+    g += '</div>';
+    const rows = b.order.map((n, i) => { const row = b.rows[n] || {};
+      return `<tr><td class="ord">${i + 1}</td><td class="nm">${esc(nick(n))}</td>${FIELDS.map(([f]) => `<td>${esc(row[f] || '')}</td>`).join('')}</tr>`; }).join('');
+    return `<div class="block"><div class="bhead"><span class="deckno">${b.deck}덱</span><b>${esc(b.label || '')}</b><span class="cnt">${b.order.length}/${MAX_PER_DECK}명</span></div>
+      <div class="bbody"><div>${g}${b.memo ? `<div class="hint" style="white-space:pre-wrap;margin-top:6px;width:334px">${esc(b.memo)}</div>` : ''}</div>
+      <div style="overflow-x:auto"><table class="lo ro"><tr><th style="width:34px">순서</th><th style="width:70px">캐릭터</th>${FIELDS.map(f => `<th style="width:${f[2]}px">${f[1]}</th>`).join('')}</tr>${rows}</table></div></div></div>`;
+  }).join('') || '<div class="hint">배치가 비어 있어요.</div>';
+}
+function openAdmin() {
+  if (!needOnline('관리자')) return;
+  if (ONLINE.isAdmin) {
+    modal(`<h2>관리자</h2><p>이 기기는 <b>관리자</b>로 등록되어 있어요.</p>
+      <ul class="hint"><li>게시판의 모든 글을 암호 없이 지울 수 있어요.</li><li>캐릭터 관리 → 수정 기록에서 장난친 기기의 편집을 막을 수 있어요.</li></ul>
+      <h3 style="font-size:13px">편집을 막은 기기</h3><div id="adBlocked" class="hint">불러오는 중…</div>
+      <div class="foot"><button id="adBack">게시판으로</button><button data-close>닫기</button></div>`);
+    $('adBack').onclick = openBoard;
+    ONLINE.listBlocked().then(ids => {
+      $('adBlocked').innerHTML = ids.length ? ids.map(id => `<div>${esc(id.slice(0, 10))}… <button class="sm" data-unblock="${esc(id)}">풀기</button></div>`).join('') : '없어요.';
+      $('adBlocked').querySelectorAll('[data-unblock]').forEach(b => b.onclick = () => ONLINE.unblockDevice(b.dataset.unblock).then(() => { toast('풀었어요'); openAdmin(); }));
+    }).catch(e => { $('adBlocked').textContent = '불러오지 못했어요: ' + e.message; });
+    return;
+  }
+  modal(`<h2>관리자</h2><p>관리자 코드를 넣으면 이 기기가 관리자로 등록돼요. (기기마다 한 번)</p>
+    <p><input type="password" id="adCode" style="width:220px"> <button class="primary" id="adLogin">관리자 등록</button></p>
+    <p class="hint">아직 관리자 코드를 안 만들었다면: <button class="sm" id="adSetup">관리자 코드 처음 만들기</button></p>
+    <div id="adErr" style="color:var(--warn);font-size:12px"></div>
+    <div class="foot"><button id="adBack">게시판으로</button><button data-close>닫기</button></div>`);
+  $('adBack').onclick = openBoard;
+  $('adLogin').onclick = async () => {
+    try { await ONLINE.adminLogin($('adCode').value); toast('관리자로 등록했어요'); openAdmin(); }
+    catch (e) { $('adErr').textContent = e.message; }
+  };
+  $('adSetup').onclick = async () => {
+    const code = $('adCode').value;
+    if (code.length < 6) { $('adErr').textContent = '위 칸에 6자 이상의 관리자 코드를 먼저 적어 주세요'; return; }
+    if (prompt('확인을 위해 관리자 코드를 한 번 더 적어 주세요') !== code) { $('adErr').textContent = '두 번 적은 코드가 달라요'; return; }
+    try { await ONLINE.adminSetup(code); toast('관리자 코드를 만들고 이 기기를 관리자로 등록했어요'); openAdmin(); }
+    catch (e) { $('adErr').textContent = '만들지 못했어요. 이미 관리자 코드가 있으면 [관리자 등록]을 쓰세요.'; }
+  };
+}
+function renderNet() {
+  const el = $('netStat'); if (!el) return;
+  if (!onlineOn()) { el.textContent = ''; return; }
+  el.textContent = ONLINE.ready ? '● 공용 연결됨' : ONLINE.error ? '● 공용 연결 실패' : '● 연결 중…';
+  el.style.color = ONLINE.ready ? 'var(--ok)' : ONLINE.error ? 'var(--warn)' : 'var(--sub)';
+  el.title = ONLINE.error || '';
+}
+$('btnBoard').onclick = openBoard;
+$('btnPublish').onclick = () => openPublish();
 
 /* ---------------- 백업/복원 ---------------- */
 $('btnBackup').onclick = () => {
@@ -1049,13 +1388,13 @@ $('btnPng').onclick = async () => {
   const c = await captureCanvas(); if (!c) return;
   c.toBlob(b => download(b, `${(curPlan().title || '배치표').replace(/[\\/:*?"<>|]/g, '')}_${today()}.png`));
 };
-$('btnCopyImg').onclick = async () => {
-  const c = await captureCanvas(); if (!c) return;
+function copyCanvas(c, name) {
   c.toBlob(async b => {
     try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); toast('이미지를 복사했어요. 카톡/디스코드에 바로 붙여넣기 하세요'); }
-    catch (_) { download(b, `배치표_${today()}.png`); toast('클립보드 복사가 막혀서 PNG 파일로 저장했어요', true); }
+    catch (_) { download(b, `${(name || '배치표').replace(/[\\/:*?"<>|]/g, '')}_${today()}.png`); toast('클립보드 복사가 막혀서 PNG 파일로 저장했어요', true); }
   });
-};
+}
+$('btnCopyImg').onclick = async () => { const c = await captureCanvas(); if (c) copyCanvas(c, curPlan().title); };
 $('btnXlsx').onclick = async () => {
   if (!window.ExcelJS) { toast('엑셀 기능을 불러오지 못했어요 (인터넷 연결 확인)', true); return; }
   const plan = curPlan(), s = curSeason();
@@ -1104,6 +1443,23 @@ let toastTimer;
 function toast(msg, warn) { const t = $('toast'); t.textContent = msg; t.className = 'toast show' + (warn ? ' warn' : ''); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.className = 'toast', 2600); }
 
 render();
+
+// 공용 서버 연결: 다른 사람이 캐릭터 정보를 고치면 바로 반영
+if (onlineOn()) {
+  ONLINE.onChange(() => {
+    CHARS = allChars(); renderNet();
+    if (!$('modalBg').classList.contains('show')) { render(); return; }
+    if ($('cmList')) {
+      cmRenderList(); cmRenderOnline();
+      const r = CM.sel ? ((sharedChars()[CM.sel] || {}).rev || 0) : 0;
+      if (CM.sel && !CM.saving && r !== CM.baseRev) {
+        if (!cmDirty()) cmSelect(CM.sel);
+        else if ($('cmDirty')) $('cmDirty').textContent = '● 저장하지 않은 변경이 있어요 · 그 사이 다른 사람이 이 캐릭터를 고쳤어요';
+      }
+    }
+  });
+  renderNet(); ONLINE.start();
+}
 </script>
 </body>
 </html>

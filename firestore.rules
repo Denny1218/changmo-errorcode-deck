@@ -1,0 +1,91 @@
+rules_version = '2';
+// 창모 에러코드 배치표 — Firestore 보안 규칙
+// Firebase 콘솔 → Firestore Database → 규칙 탭에 이 내용을 그대로 붙여 넣고 [게시]를 누르세요.
+//
+//  shared/chars     : 공용 캐릭터 정보 (누구나 읽기, 로그인한 기기 누구나 수정)
+//  charHistory/*    : 캐릭터 수정 기록 (누구나 읽기, 추가만 가능)
+//  posts/*          : 게시판 글. 제목·닉네임·날짜만 보이고 내용(ct)은 글 암호로 암호화되어 있음
+//  postKeys/*       : 글 암호 확인값 (아무도 읽을 수 없음, 규칙만 비교에 씀)
+//  grants/*         : "이 기기는 이 글의 암호를 안다" 표시 → 수정·삭제 허용
+//  admins/*, secret/admin, blocked/* : 관리자 기능
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && exists(/databases/$(db)/documents/admins/$(request.auth.uid)); }
+    function notBlocked() { return !exists(/databases/$(db)/documents/blocked/$(request.auth.uid)); }
+    function hasGrant(id) { return signedIn() && exists(/databases/$(db)/documents/grants/$(id + '_' + request.auth.uid)); }
+    function postFields() { return ['title', 'author', 'boss', 'season', 'salt', 'iv', 'ct', 'createdAt', 'updatedAt']; }
+    function validPost() {
+      return request.resource.data.keys().hasOnly(postFields())
+        && request.resource.data.title is string && request.resource.data.title.size() <= 80
+        && request.resource.data.author is string && request.resource.data.author.size() <= 30
+        && request.resource.data.ct is string && request.resource.data.ct.size() <= 500000;
+    }
+
+    match /shared/chars {
+      allow read: if true;
+      allow create, update: if signedIn() && notBlocked()
+        && request.resource.data.keys().hasOnly(['data', 'updatedAt', 'by'])
+        && request.resource.data.data is map;
+    }
+
+    match /charHistory/{id} {
+      allow read: if true;
+      allow create: if signedIn() && notBlocked()
+        && request.resource.data.keys().hasOnly(['name', 'before', 'after', 'by', 'uid', 'at'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.before is string && request.resource.data.before.size() <= 30000
+        && request.resource.data.after is string && request.resource.data.after.size() <= 30000;
+      allow delete: if isAdmin();
+    }
+
+    match /posts/{id} {
+      allow read: if true;
+      allow create: if signedIn() && notBlocked() && validPost()
+        && getAfter(/databases/$(db)/documents/postKeys/$(id)) != null;
+      allow update: if (hasGrant(id) || isAdmin()) && validPost()
+        && request.resource.data.salt == resource.data.salt
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if hasGrant(id) || isAdmin();
+    }
+
+    match /postKeys/{id} {
+      allow read: if false;
+      allow create: if signedIn() && notBlocked()
+        && request.resource.data.keys().hasOnly(['proof'])
+        && !exists(/databases/$(db)/documents/posts/$(id))
+        && getAfter(/databases/$(db)/documents/posts/$(id)) != null;
+      allow delete: if hasGrant(id) || isAdmin();
+    }
+
+    // 문서 이름 = 글ID_기기ID. 글 암호에서 만든 확인값이 맞아야 만들 수 있음
+    match /grants/{gid} {
+      allow get: if signedIn() && resource.data.uid == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['post', 'uid', 'proof'])
+        && request.resource.data.uid == request.auth.uid
+        && gid == request.resource.data.post + '_' + request.auth.uid
+        && request.resource.data.proof == getAfter(/databases/$(db)/documents/postKeys/$(request.resource.data.post)).data.proof;
+    }
+
+    match /admins/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['code'])
+        && request.resource.data.code == get(/databases/$(db)/documents/secret/admin).data.code;
+    }
+
+    // 관리자 코드는 처음 한 번만 만들 수 있음 (툴의 관리자 화면에서)
+    match /secret/admin {
+      allow read: if false;
+      allow create: if signedIn() && request.resource.data.keys().hasOnly(['code'])
+        && request.resource.data.code is string && request.resource.data.code.size() == 64;
+    }
+
+    match /blocked/{uid} {
+      allow get: if signedIn();
+      allow list: if isAdmin();
+      allow create, delete: if isAdmin();
+    }
+  }
+}
