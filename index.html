@@ -143,6 +143,28 @@ table.lo.ro td{padding:4px 5px;height:auto;white-space:normal;word-break:keep-al
 .capturing .noprint{display:none!important}
 .capturing .cell .x{display:none!important}
 .capturing .cell.void{border-color:transparent}
+body.mode-home main,body.mode-home .edit-only,body:not(.mode-home) #home,body:not(.mode-home) .home-only{display:none!important}
+#home{max-width:1000px;margin:0 auto;padding:16px}
+.home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:14px}
+.home-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.home-card .k{font-size:11px;color:var(--sub)}
+.home-card .t{font-size:16px;font-weight:700;margin:2px 0 6px}
+.home-card .next{display:inline-block;background:var(--accent-bg);color:var(--accent);border-radius:6px;padding:2px 8px;font-size:12px;font-weight:600;margin-top:6px}
+.home-last{display:flex;align-items:center;gap:12px;background:var(--accent-bg);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.home-last .t{font-size:16px;font-weight:700}
+.home-sec{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.home-sec-h{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.home-sec-h h2{font-size:15px;margin:0}
+.post-row{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--line2);cursor:pointer}
+.post-row:last-child{border-bottom:none}
+.post-row:hover{background:var(--chip)}
+.post-row .tt{flex:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.post-row .meta{font-size:12px;color:var(--sub);white-space:nowrap}
+.badge{display:inline-block;font-size:11px;padding:1px 8px;border-radius:10px;white-space:nowrap}
+.badge.boss{background:var(--boss);color:var(--boss-t)}
+.badge.new{background:#fef3c7;color:#92400e}
+.badge.lock{background:var(--chip);color:var(--sub)}
+.badge.open{background:#dcfce7;color:var(--ok)}
 .capturing #capture{border:none;width:1320px}
 .capturing .memo.blank{display:none}
 .capturing .bbody{grid-template-columns:auto minmax(0,1fr)}
@@ -151,19 +173,38 @@ table.lo.ro td{padding:4px 5px;height:auto;white-space:normal;word-break:keep-al
 <body>
 <header>
   <h1>창모 에러코드 배치표</h1>
-  <select id="seasonSel" title="공지에서 가져온 에러코드 시즌"></select>
-  <button id="btnCustomSeason" title="공지가 아직 없을 때 직접 시즌을 만듭니다">+ 직접 시즌</button>
-  <button id="btnCopyPrev">지난 배치 가져오기</button>
-  <button id="btnBoard">게시판</button>
-  <button id="btnPublish">게시</button>
+  <button id="btnHome" class="edit-only" title="덱 확인 화면으로">← 메인으로</button>
+  <select id="seasonSel" class="edit-only" title="공지에서 가져온 에러코드 시즌"></select>
+  <button id="btnCustomSeason" class="edit-only" title="공지가 아직 없을 때 직접 시즌을 만듭니다">+ 직접 시즌</button>
+  <button id="btnCopyPrev" class="edit-only">지난 배치 가져오기</button>
+  <button id="btnBoard" class="edit-only">게시판</button>
+  <button id="btnPublish" class="edit-only">게시</button>
   <span id="netStat" class="hint"></span>
   <span class="sp"></span>
-  <button id="btnCopyImg" class="primary">이미지 복사</button>
-  <button id="btnPng">PNG 저장</button>
-  <button id="btnXlsx">엑셀 저장</button>
-  <button id="btnChars">캐릭터 관리</button>
-  <button id="btnBackup">백업/복원</button>
+  <button id="btnCopyImg" class="primary edit-only">이미지 복사</button>
+  <button id="btnPng" class="edit-only">PNG 저장</button>
+  <button id="btnXlsx" class="edit-only">엑셀 저장</button>
+  <button id="btnChars" class="edit-only">캐릭터 관리</button>
+  <button id="btnBackup" class="edit-only">백업/복원</button>
+  <button id="btnEdit" class="home-only" title="배치를 직접 짜고 게시하는 화면">덱 만들기 (편집)</button>
 </header>
+
+<!-- 메인: 덱 확인 화면 (대부분은 여기서 게시된 배치만 확인) -->
+<section id="home">
+  <div id="homeLast"></div>
+  <div id="homeSeasons" class="home-grid"></div>
+  <div class="home-sec">
+    <div class="home-sec-h"><h2>이번 시즌 덱</h2><span class="hint" id="homeSeasonHint"></span><span class="sp"></span><button class="sm" id="homeRefresh">새로고침</button></div>
+    <div id="homeCurrent"><div class="hint">불러오는 중…</div></div>
+  </div>
+  <div class="home-sec">
+    <div class="home-sec-h"><h2>지난 글</h2><span class="sp"></span>
+      <input type="text" id="homeQ" placeholder="제목·닉네임 검색" style="width:180px">
+      <select id="homeBoss"><option value="">전체</option><option>디에네</option><option>아수라</option></select></div>
+    <div id="homeOld"></div>
+  </div>
+  <p class="hint" style="text-align:center;margin:18px 0">덱 내용은 글 암호를 아는 사람만 열 수 있어요. 한 번 넣은 암호는 이 기기에 기억돼요.</p>
+</section>
 
 <main>
   <aside class="side">
@@ -1213,7 +1254,7 @@ async function openPost(p) {
     <div id="poErr" style="color:var(--warn);font-size:12px"></div>
     ${ONLINE.isAdmin ? '<p class="hint">관리자는 암호 없이 지울 수 있어요. <button class="sm" id="poAdminDel">이 글 삭제</button></p>' : ''}
     <div class="foot"><button id="poBack">목록으로</button></div>`);
-  $('poBack').onclick = openBoard;
+  $('poBack').onclick = backToList;
   if ($('poAdminDel')) $('poAdminDel').onclick = () => deletePostFlow(p, '');
   const go = async () => {
     const pw = $('poPw').value; if (!pw) return;
@@ -1226,11 +1267,12 @@ async function openPost(p) {
 }
 function showPost(p, res, pw) {
   const c = res.content || {}, plan = c.plan || { blocks: [] };
+  markSeen(p);
   modal(`<h2>${esc(p.title)}</h2><p class="hint">${esc(c.season ? c.season.label : (p.season || ''))} · ${esc(p.author)} · ${esc(fmtTime(p.updatedAt))}</p>
     <div id="poView" style="background:#fff;padding:6px">${staticPlanHtml(plan)}</div>
     <div class="foot"><button id="poBack">목록으로</button><span style="flex:1"></span>
       <button id="poDel">삭제</button><button id="poImg">이미지 복사</button><button class="primary" id="poLoad">내 편집 화면으로 불러오기</button></div>`, 'view');
-  $('poBack').onclick = openBoard;
+  $('poBack').onclick = backToList;
   $('poDel').onclick = () => deletePostFlow(p, pw);
   $('poImg').onclick = async () => {
     if (!window.html2canvas) { toast('이미지 기능을 불러오지 못했어요', true); return; }
@@ -1259,7 +1301,7 @@ function loadPostIntoEditor(p, c) {
 }
 async function deletePostFlow(p, pw) {
   if (!confirm(`"${p.title}" 글을 지울까요? 되돌릴 수 없어요.`)) return;
-  try { await ONLINE.deletePost(p.id, pw); toast('글을 지웠어요'); openBoard(); }
+  try { await ONLINE.deletePost(p.id, pw); HOME.posts = null; toast('글을 지웠어요'); backToList(); }
   catch (e) { toast('지우지 못했어요: ' + e.message, true); }
 }
 function openPublish() {
@@ -1290,7 +1332,7 @@ function openPublish() {
       const content = { v: 1, plan: { title: plan.title || title, blocks: plan.blocks }, season: s ? { key: s.key, label: s.label, boss: s.boss, mode: s.mode, allowed: s.allowed || [] } : {} };
       const id = await ONLINE.publish({ postId: mode === 'update' ? src.id : null, title, author, password, boss: s ? s.boss : '',
         season: s ? (s.season ? `${s.mode || ''} ${s.season}`.trim() : s.label) : '', content });
-      plan.source = { id, title }; touch();
+      plan.source = { id, title }; touch(); HOME.posts = null;
       try { localStorage.setItem('gs-nick', author); localStorage.setItem('gs-last-pw', password); } catch (e) {}
       closeModal(); render(); toast(mode === 'update' ? '글을 고쳤어요' : '게시판에 올렸어요. 글 암호를 함께 볼 사람들에게 알려 주세요');
     } catch (e) { $('pbOk').disabled = false; $('pbErr').textContent = '올리지 못했어요: ' + e.message; }
@@ -1375,6 +1417,81 @@ function renderNet() {
 }
 $('btnBoard').onclick = openBoard;
 $('btnPublish').onclick = () => openPublish();
+
+/* ---------------- 메인(덱 확인) 화면 ---------------- */
+// 대부분은 게시된 덱만 확인하므로, 처음 열면 이 화면이 나옴. 덱을 짜는 사람은 [덱 만들기 (편집)]으로 들어가고, 그 기기는 다음에도 편집 화면으로 시작함
+const HOME = { posts: null, loading: false };
+const isHome = () => document.body.classList.contains('mode-home');
+function setMode(m) {
+  document.body.classList.toggle('mode-home', m === 'home');
+  try { localStorage.setItem('gs-start', m); } catch (e) {}
+  closeModal();
+  if (m === 'home') renderHome(); else render();
+  window.scrollTo(0, 0);
+}
+// 글 보기 창의 [목록으로]: 메인에서는 창만 닫고, 편집 화면에서는 게시판 창으로
+function backToList() { if (isHome()) { closeModal(); renderHome(); } else openBoard(); }
+function lastSeen() { try { return JSON.parse(localStorage.getItem('gs-last-post') || 'null'); } catch (e) { return null; } }
+function markSeen(p) { try { localStorage.setItem('gs-last-post', JSON.stringify({ id: p.id, title: p.title, seen: p.updatedAt })); } catch (e) {} }
+// 게시글의 '시즌' 칸과 같은 형식 (예: "기사단 2-1", "개인 43")
+const seasonTag = s => s ? (s.season ? `${s.mode || ''} ${s.season}`.trim() : s.label) : '';
+function battles(s) {
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const all = [...String((s && s.schedule) || '').matchAll(/(\d+)차\s*:\s*(\d{1,2})\/(\d{1,2})\(([^)]+)\)/g)]
+    .map(m => ({ n: m[1], d: new Date(now.getFullYear(), +m[2] - 1, +m[3]), s: `${+m[2]}/${+m[3]}(${m[4]})` }));
+  return { all, next: all.find(x => x.d >= now) };
+}
+function seasonCardHtml(s) {
+  const b = battles(s);
+  return `<div class="home-card"><div class="k">진행 중 · ${s.mode === '기사단' ? '기사단 에러코드' : '에러코드'}</div>
+    <div class="t">${esc(s.boss)} ${esc(s.season || '')}</div>
+    <div>${(s.allowed || []).map(attrChip).join('') || '<span class="hint">입장 속성 정보 없음</span>'}</div>
+    ${s.buffDebuff ? `<div class="hint" style="margin-top:6px">${esc(s.buffDebuff)}</div>` : ''}
+    ${b.next ? `<span class="next">다음 전투 ${b.next.n}차 · ${esc(b.next.s)}</span>` : b.all.length ? '<span class="hint">이번 시즌 전투 일정이 끝났어요</span>' : ''}
+    ${b.all.length ? `<div class="hint" style="margin-top:4px">${b.all.map(x => `${x.n}차 ${esc(x.s)}`).join(' · ')}</div>` : ''}</div>`;
+}
+const homeSeasons = () => [DATA.seasons.find(s => s.mode === '기사단'), DATA.seasons.find(s => s.mode === '개인')].filter(Boolean);
+function postRowHtml(p, last) {
+  const known = ONLINE.knownPw(p.id), isNew = last && last.id === p.id && p.updatedAt > last.seen;
+  return `<div class="post-row" data-post="${esc(p.id)}"><span class="badge ${known ? 'open' : 'lock'}">${known ? '열림' : '잠김'}</span>
+    <span class="tt">${esc(p.title)}</span>${isNew ? '<span class="badge new">새로 고쳐짐</span>' : ''}${p.boss ? `<span class="badge boss">${esc(p.boss)}</span>` : ''}
+    <span class="meta">${esc(p.author)} · ${esc(fmtTime(p.updatedAt))}</span></div>`;
+}
+async function renderHome(force) {
+  if (!isHome()) return;
+  const ss = homeSeasons(), tags = ss.map(seasonTag);
+  $('homeSeasons').innerHTML = ss.map(seasonCardHtml).join('');
+  $('homeSeasonHint').textContent = tags.join(' · ');
+  const msg = (el, h) => { $(el).innerHTML = h; };
+  if (!onlineOn()) { msg('homeCurrent', '<div class="hint">게시판이 설정되지 않았어요. [덱 만들기 (편집)]에서 배치를 짤 수 있어요.</div>'); msg('homeOld', ''); msg('homeLast', ''); return; }
+  if (!ONLINE.ready) { msg('homeCurrent', `<div class="hint">${ONLINE.error ? '공용 서버 연결 실패: ' + esc(ONLINE.error) : '게시판에 연결하는 중…'}</div>`); return; }
+  if (!HOME.posts || force) {
+    if (HOME.loading) return;
+    HOME.loading = true;
+    try { HOME.posts = await ONLINE.listPosts(); }
+    catch (e) { HOME.loading = false; msg('homeCurrent', `<div style="color:var(--warn)">목록을 불러오지 못했어요: ${esc(e.message)}</div>`); return; }
+    HOME.loading = false;
+  }
+  const posts = HOME.posts, last = lastSeen(), lp = last && posts.find(p => p.id === last.id);
+  msg('homeLast', lp ? `<div class="home-last"><div style="flex:1;min-width:0"><div class="hint">지난번에 본 덱</div>
+      <div class="t">${esc(lp.title)} ${lp.updatedAt > last.seen ? '<span class="badge new">새로 고쳐짐</span>' : ''}</div>
+      <div class="hint">${esc(lp.author)} · ${esc(fmtTime(lp.updatedAt))} 수정</div></div><button class="primary" data-post="${esc(lp.id)}">바로 보기</button></div>` : '');
+  const cur = posts.filter(p => tags.includes(p.season));
+  msg('homeCurrent', cur.length ? cur.map(p => postRowHtml(p, last)).join('') : '<div class="hint">이번 시즌에 올라온 덱이 아직 없어요.</div>');
+  const q = $('homeQ').value.trim(), boss = $('homeBoss').value;
+  const old = posts.filter(p => !tags.includes(p.season) && (!boss || p.boss === boss) && (!q || p.title.includes(q) || (p.author || '').includes(q)));
+  msg('homeOld', old.length ? old.map(p => postRowHtml(p, last)).join('')
+    : `<div class="hint">${posts.length > cur.length ? '조건에 맞는 글이 없어요.' : '아직 지난 글이 없어요.'}</div>`);
+}
+$('home').addEventListener('click', e => {
+  const el = e.target.closest('[data-post]'); if (!el) return;
+  const p = (HOME.posts || []).find(x => x.id === el.dataset.post); if (p) openPost(p);
+});
+$('homeRefresh').onclick = () => renderHome(true);
+$('homeQ').oninput = () => renderHome();
+$('homeBoss').onchange = () => renderHome();
+$('btnEdit').onclick = () => setMode('edit');
+$('btnHome').onclick = () => setMode('home');
 
 /* ---------------- 백업/복원 ---------------- */
 $('btnBackup').onclick = () => {
@@ -1462,12 +1579,20 @@ function closeModal() { $('modalBg').classList.remove('show'); }
 let toastTimer;
 function toast(msg, warn) { const t = $('toast'); t.textContent = msg; t.className = 'toast show' + (warn ? ' warn' : ''); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.className = 'toast', 2600); }
 
+// 시작 화면: 주소 끝이 #edit 이면 편집, #home 이면 메인, 아니면 이 기기에서 마지막에 쓴 화면 (처음이면 메인)
+{
+  let start = 'home'; try { start = localStorage.getItem('gs-start') || 'home'; } catch (e) {}
+  if (location.hash === '#edit') start = 'edit'; else if (location.hash === '#home') start = 'home';
+  document.body.classList.toggle('mode-home', start === 'home');
+}
 render();
+renderHome();
 
 // 공용 서버 연결: 다른 사람이 캐릭터 정보를 고치면 바로 반영
 if (onlineOn()) {
   ONLINE.onChange(() => {
     CHARS = allChars(); renderNet();
+    if (isHome()) { if (!$('modalBg').classList.contains('show')) renderHome(); return; }
     if (!$('modalBg').classList.contains('show')) { render(); return; }
     if ($('cmList')) {
       cmRenderList(); cmRenderOnline();
