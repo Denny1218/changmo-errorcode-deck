@@ -307,6 +307,11 @@ function load() {
   } catch (e) {}
   const st = blankState();
   if (window.GENESIS_SEED) Object.assign(st, JSON.parse(JSON.stringify(window.GENESIS_SEED)));
+  // 공용 서버를 쓰면 캐릭터 정보는 공용 값을 씀. 처음 온 사람에게 예전 기본값을 '공용으로 올리기'로 띄우지 않도록 숨김 설정만 남김
+  if (window.FIREBASE_CONFIG) {
+    for (const [n, m] of Object.entries(st.charMeta || {})) { if (m && m.hidden) st.charMeta[n] = { hidden: true }; else delete st.charMeta[n]; }
+    st.skillsExtra = {}; st.customChars = [];
+  }
   return st;
 }
 // 예전 버전이 엑셀 줄임말로 임의로 만들었던 캐릭터(투싸·퐁퐁·찌)를 저장 데이터에서 걷어냄
@@ -607,6 +612,8 @@ function moveCell(fromBi, fromKey, toBi, toKey) {
     delete A.cells[fromKey]; if (occ) A.cells[fromKey] = occ;
     A.cells[toKey] = n; touch(); render(); return;
   }
+  // 옮길 덱이 꽉 찼으면 원래 덱에서 빼지 않음 (캐릭터가 사라지지 않도록)
+  if (!B.order.includes(n) && B.order.length >= MAX_PER_DECK) { toast(`한 덱은 최대 ${MAX_PER_DECK}명이에요`, true); return; }
   const row = A.rows[n];
   removeFromBlock(A, n);
   placeChar(toBi, n, toKey);
@@ -672,7 +679,8 @@ blocksEl.addEventListener('input', e => {
   let v = e.target.value;
   if (v === '__custom') {
     v = (prompt(`${nick(n)} ${f === 'cls' ? '클래스' : '아티팩트'} 이름을 입력하세요`, '') || '').trim();
-    setRow(b, n, f, v); render(); return;
+    if (v) setRow(b, n, f, v);   // 취소하거나 비우면 원래 값 그대로
+    render(); return;
   }
   setRow(b, n, f, v);
 });
@@ -1196,18 +1204,19 @@ async function cmSave() {
   CM.saving = true; cmUpdateDirty();
   try {
     const hasAny = Object.keys(e).some(k => k !== 'custom') || e.custom;
-    let r = await ONLINE.saveChar(d.name, hasAny ? e : null, CM.baseRev, by);
+    let rev = CM.baseRev, r = await ONLINE.saveChar(d.name, hasAny ? e : null, rev, by);
     if (r.conflict) {
       const who = r.current ? `${r.current.by}님이 ${new Date(r.current.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}에` : '다른 사람이';
       if (!confirm(`${who} 이 캐릭터를 먼저 고쳤어요.\n\n[확인]: 내 수정 내용으로 덮어쓰기\n[취소]: 저장하지 않고 상대가 고친 내용 보기`)) {
         CM.saving = false; cmSelect(d.name); toast('다른 사람이 고친 내용을 불러왔어요'); return;
       }
-      r = await ONLINE.saveChar(d.name, hasAny ? e : null, r.current ? r.current.rev || 0 : 0, by);
+      rev = r.current ? r.current.rev || 0 : 0;
+      r = await ONLINE.saveChar(d.name, hasAny ? e : null, rev, by);
       if (r.conflict) throw new Error('그 사이에 또 바뀌었어요. 다시 시도해 주세요');
     }
     setHidden(); save();
     // 서버에서 새 값이 내려오기 전에 화면부터 바꿈
-    if (hasAny) ONLINE.shared[d.name] = Object.assign({}, e, { rev: CM.baseRev + 1, by, at: Date.now() }); else delete ONLINE.shared[d.name];
+    if (hasAny) ONLINE.shared[d.name] = Object.assign({}, e, { rev: rev + 1, by, at: Date.now() }); else delete ONLINE.shared[d.name];
     CM.saving = false; CHARS = allChars(); toast(`${nick(d.name)} 정보를 공용으로 저장했어요`); cmSelect(d.name);
   } catch (err) {
     CM.saving = false; cmUpdateDirty(); toast('저장하지 못했어요: ' + err.message, true);
@@ -1247,7 +1256,7 @@ async function openBoard() {
 async function openPost(p) {
   const tryOpen = async pw => { try { return await ONLINE.openPost(p.id, pw); } catch (e) { return { err: e.message }; } };
   const known = ONLINE.knownPw(p.id);
-  if (known) { const r = await tryOpen(known); if (!r.err) return showPost(p, r, known); ONLINE.forgetPw(p.id); }
+  if (known) { const r = await tryOpen(known); if (!r.err) return showPost(p, r, known); if (/암호/.test(r.err)) ONLINE.forgetPw(p.id); else { toast('글을 열지 못했어요: ' + r.err, true); return; } }
   modal(`<h2>${esc(p.title)}</h2><p class="hint">${esc(p.author)} · ${esc(fmtTime(p.updatedAt))}</p>
     <p>이 글의 암호를 넣어 주세요.</p>
     <p><input type="text" id="poPw" style="width:220px" autocomplete="off"> <button class="primary" id="poOk">열기</button></p>
@@ -1283,16 +1292,18 @@ function showPost(p, res, pw) {
 }
 function loadPostIntoEditor(p, c) {
   const s = c.season || {};
-  let key = s.key;
+  let key = s.key, added = false;
   if (!key || !seasonList().some(x => x.key === key)) {
     key = 'post-' + p.id;
-    if (!S.customSeasons.some(x => x.key === key)) S.customSeasons.push({ key, name: (s.label || p.title).replace(/^\[[^\]]*\]\s*/, ''), boss: s.boss || p.boss || '디에네', mode: s.mode || '기사단', season: '', allowed: s.allowed || [], buffChars: [], randomBuffChars: [] });
+    if (!S.customSeasons.some(x => x.key === key)) added = S.customSeasons.push({ key, name: (s.label || p.title).replace(/^\[[^\]]*\]\s*/, ''), boss: s.boss || p.boss || '디에네', mode: s.mode || '기사단', season: '', allowed: s.allowed || [], buffChars: [], randomBuffChars: [] });
   }
   const prev = S.currentSeason;
   S.currentSeason = key;
   const plan = curPlan();
   if (plan.blocks.some(b => b.order.length) && !(plan.source && plan.source.id === p.id)
-    && !confirm('이 시즌에 짜 둔 내 배치가 게시판 글 내용으로 바뀌어요. 계속할까요?')) { S.currentSeason = prev; return; }
+    && !confirm('이 시즌에 짜 둔 내 배치가 게시판 글 내용으로 바뀌어요. 계속할까요?')) {
+    S.currentSeason = prev; if (added) { S.customSeasons = S.customSeasons.filter(x => x.key !== key); delete S.plans[key]; } return;
+  }
   plan.blocks = JSON.parse(JSON.stringify((c.plan || {}).blocks || []));
   plan.title = (c.plan || {}).title || p.title;
   plan.source = { id: p.id, title: p.title };
@@ -1503,7 +1514,7 @@ $('btnBackup').onclick = () => {
   $('bkSave').onclick = () => download(new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' }), `창모배치표_백업_${today()}.json`);
   $('bkFile').onchange = async e => {
     const f = e.target.files[0]; if (!f) return;
-    try { const d = JSON.parse(await f.text()); if (!d.plans) throw 0; if (!confirm('지금 데이터를 백업 파일 내용으로 바꿀까요?')) return; S = Object.assign(blankState(), d); save(); closeModal(); render(); toast('복원했어요'); }
+    try { const d = JSON.parse(await f.text()); if (!d.plans) throw 0; if (!confirm('지금 데이터를 백업 파일 내용으로 바꿀까요?')) return; S = migrate(Object.assign(blankState(), d)); activeBlock = 0; CHARS = allChars(); save(); closeModal(); render(); toast('복원했어요'); }
     catch (_) { toast('백업 파일을 읽지 못했어요', true); }
   };
 };
