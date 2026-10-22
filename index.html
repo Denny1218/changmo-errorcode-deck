@@ -143,6 +143,8 @@ table.lo.ro td{padding:4px 5px;height:auto;white-space:normal;word-break:keep-al
 .capturing .noprint{display:none!important}
 .capturing .cell .x{display:none!important}
 .capturing .cell.void{border-color:transparent}
+.new-season{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 16px 0;padding:9px 12px;border:1px solid var(--accent);background:var(--accent-bg);border-radius:8px;font-size:13px}
+.new-season:empty{display:none}
 body.mode-home main,body.mode-home .edit-only,body:not(.mode-home) #home,body:not(.mode-home) .home-only{display:none!important}
 #home{max-width:1000px;margin:0 auto;padding:16px}
 .home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:14px}
@@ -206,6 +208,7 @@ body.mode-home main,body.mode-home .edit-only,body:not(.mode-home) #home,body:no
   <p class="hint" style="text-align:center;margin:18px 0">덱 내용은 글 암호를 아는 사람만 열 수 있어요. 한 번 넣은 암호는 이 기기에 기억돼요.</p>
 </section>
 
+<div id="newSeason" class="new-season edit-only"></div>
 <main>
   <aside class="side">
     <div class="card" id="seasonInfo"></div>
@@ -312,6 +315,9 @@ function load() {
     for (const [n, m] of Object.entries(st.charMeta || {})) { if (m && m.hidden) st.charMeta[n] = { hidden: true }; else delete st.charMeta[n]; }
     st.skillsExtra = {}; st.customChars = [];
   }
+  // 처음 온 사람은 기본 데이터에 저장된 예전 시즌 말고 최신 시즌으로 시작
+  st.currentSeason = null;
+  st.seasonSeen = latestSeasons();
   return st;
 }
 // 예전 버전이 엑셀 줄임말로 임의로 만들었던 캐릭터(투싸·퐁퐁·찌)를 저장 데이터에서 걷어냄
@@ -328,6 +334,24 @@ function migrate(st) {
     st.v = 2;
   }
   return st;
+}
+// 구분(개인/기사단)별 가장 최근 공지 시즌 (data.js 의 시즌은 최신 공지부터 정렬되어 있음)
+function latestSeasons() {
+  const o = {};
+  for (const s of DATA.seasons) if (!o[s.mode]) o[s.mode] = s.key;
+  return o;
+}
+// 새 공지 시즌이 나왔으면 편집 화면을 같은 구분의 최신 시즌으로 넘김.
+// 새 시즌을 한 번 확인한 뒤에 일부러 지난 시즌을 고르면 다음 새 시즌이 나올 때까지 그대로 둠. 직접 만든 시즌은 건드리지 않음
+let NEW_SEASON = null;
+function checkNewSeason() {
+  const latest = latestSeasons(), seen = S.seasonSeen || {};
+  const cur = S.currentSeason && DATA.seasons.find(s => s.key === S.currentSeason);
+  if (cur && latest[cur.mode] && latest[cur.mode] !== cur.key && latest[cur.mode] !== seen[cur.mode]) {
+    NEW_SEASON = { from: cur.key, to: latest[cur.mode] };
+    S.currentSeason = latest[cur.mode]; activeBlock = 0;
+  }
+  if (JSON.stringify(seen) !== JSON.stringify(latest)) { S.seasonSeen = latest; save(); }
 }
 let saveTimer = null;
 function save() {
@@ -416,9 +440,19 @@ function charsInDeck(plan, deck, exceptIdx) {
 /* ---------------- 렌더링 ---------------- */
 function render() {
   CHARS = allChars();
-  renderSeasonSel(); renderSeasonInfo(); renderPool(); renderBlocks();
+  renderSeasonSel(); renderSeasonInfo(); renderPool(); renderBlocks(); renderNewSeason();
   const d = DATA.generatedAt ? `공지 데이터: ${DATA.generatedAt} 기준 · 게시글 ${DATA.postCount}건 · 캐릭터 ${DATA.characters.length}명` : 'data.js 가 없어요. update-data.bat 를 먼저 실행하세요.';
   document.getElementById('dataInfo').textContent = d + ' · 새 공지가 올라오면 update-data.bat 실행 후 새로고침';
+}
+function renderNewSeason() {
+  const el = document.getElementById('newSeason'), list = NEW_SEASON && seasonList();
+  const to = list && list.find(s => s.key === NEW_SEASON.to), from = list && list.find(s => s.key === NEW_SEASON.from);
+  if (!to || S.currentSeason !== to.key) { el.innerHTML = ''; return; }
+  const hasPrev = from && S.plans[from.key] && S.plans[from.key].blocks.some(b => b.order.length);
+  el.innerHTML = `<span>📢 새 시즌 <b>${esc(to.label)}</b>(으)로 바꿨어요.${from ? ` <span class="hint">이전: ${esc(from.label)}</span>` : ''}</span>
+    <span style="flex:1"></span>${hasPrev ? '<button class="sm primary" id="nsCopy">지난 배치 가져오기</button>' : ''}<button class="sm" id="nsClose">닫기</button>`;
+  if ($('nsCopy')) $('nsCopy').onclick = () => $('btnCopyPrev').click();
+  $('nsClose').onclick = () => { NEW_SEASON = null; renderNewSeason(); };
 }
 function renderSeasonSel() {
   const sel = document.getElementById('seasonSel'), s = curSeason();
@@ -832,7 +866,7 @@ $('btnCopyPrev').onclick = () => {
   $('modal').querySelectorAll('[data-copy]').forEach(btn => btn.onclick = () => {
     const src = S.plans[btn.dataset.copy], plan = curPlan();
     plan.blocks = JSON.parse(JSON.stringify(src.blocks)).map(b => Object.assign(b, { boss: cur.boss }));
-    activeBlock = 0; touch(); closeModal(); render(); toast('지난 배치를 가져왔어요. 바뀐 부분만 고치면 돼요');
+    activeBlock = 0; NEW_SEASON = null; touch(); closeModal(); render(); toast('지난 배치를 가져왔어요. 바뀐 부분만 고치면 돼요');
   });
 };
 
@@ -1596,6 +1630,7 @@ function toast(msg, warn) { const t = $('toast'); t.textContent = msg; t.classNa
   if (location.hash === '#edit') start = 'edit'; else if (location.hash === '#home') start = 'home';
   document.body.classList.toggle('mode-home', start === 'home');
 }
+checkNewSeason();
 render();
 renderHome();
 
