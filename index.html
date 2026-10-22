@@ -340,6 +340,13 @@ function migrate(st) {
       for (const [n, r] of Object.entries(b.rows || {})) if (st.history[n] && strip(st.history[n]) === strip(r)) delete st.history[n];
     st.v = 3;
   }
+  // 엑셀에서 가져온 배치 두 개(와 그 시즌)는 고치다 만 자료라서 지움
+  if (st.v < 4) {
+    for (const k of Object.keys(st.plans || {})) if (k.startsWith('excel-')) delete st.plans[k];
+    st.customSeasons = (st.customSeasons || []).filter(s => !String(s.key).startsWith('excel-'));
+    if (String(st.currentSeason || '').startsWith('excel-')) st.currentSeason = null;
+    st.v = 4;
+  }
   return st;
 }
 // 구분(개인/기사단)별 가장 최근 공지 시즌 (data.js 의 시즌은 최신 공지부터 정렬되어 있음)
