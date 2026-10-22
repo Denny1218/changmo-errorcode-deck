@@ -318,7 +318,7 @@ function load() {
   // 처음 온 사람은 기본 데이터에 저장된 예전 시즌 말고 최신 시즌으로 시작
   st.currentSeason = null;
   st.seasonSeen = latestSeasons();
-  return st;
+  return migrate(st);
 }
 // 예전 버전이 엑셀 줄임말로 임의로 만들었던 캐릭터(투싸·퐁퐁·찌)를 저장 데이터에서 걷어냄
 function migrate(st) {
@@ -332,6 +332,13 @@ function migrate(st) {
       for (const n of junk) delete b.rows[n];
     }
     st.v = 2;
+  }
+  // 엑셀 배치에서 그대로 따온 '마지막 장비 기억'은 지움 (캐릭터를 놓을 때 고치다 만 엑셀 값이 자동으로 채워지지 않도록)
+  if (st.v < 3) {
+    const strip = r => { const o = Object.assign({}, r); delete o.dmg; delete o.note; return JSON.stringify(o); };
+    for (const [k, p] of Object.entries(st.plans || {})) if (k.startsWith('excel-')) for (const b of p.blocks)
+      for (const [n, r] of Object.entries(b.rows || {})) if (st.history[n] && strip(st.history[n]) === strip(r)) delete st.history[n];
+    st.v = 3;
   }
   return st;
 }
@@ -507,7 +514,8 @@ function renderPool() {
 // 지금까지 저장된 모든 배치의 장비 행 [{char, row}]
 function allRows() {
   const out = [];
-  for (const p of Object.values(S.plans)) for (const b of p.blocks) for (const [n, r] of Object.entries(b.rows)) if (r) out.push({ char: n, row: r });
+  // 처음 올린 엑셀에서 가져온 배치(excel-…)는 고치다 만 자료라서 추천·기록에 쓰지 않음
+  for (const [k, p] of Object.entries(S.plans)) if (!k.startsWith('excel-')) for (const b of p.blocks) for (const [n, r] of Object.entries(b.rows)) if (r) out.push({ char: n, row: r });
   return out;
 }
 // 입력 칸 자동완성: 이 캐릭터가 쓰던 값 → 다른 캐릭터가 쓰던 값 → 공지 데이터 순
@@ -745,8 +753,8 @@ function openSkillPicker(bi, n) {
   const toOfficial = t => { if (info[t]) return t; const m = official.filter(s => s.n.replace(/\s/g, '').includes(t.replace(/\s/g, ''))); return m.length === 1 ? m[0].n : t; };
   let picked = [...new Set(splitSkills(row.skill).map(toOfficial))];
   const mine = countSkills(c => c === n).map(toOfficial).filter(t => !info[t]);
-  const sameCls = cls ? countSkills((c, r) => c !== n && (r.cls || '').trim() === cls).filter(t => !info[t] && !mine.includes(t)) : [];
-  const rest = [...new Set([...countSkills(() => true), ...(DATA.activeSkills || [])])].filter(t => !info[t] && !mine.includes(t) && !sameCls.includes(t));
+  // 스킬은 캐릭터마다 다르므로 같은 클래스의 다른 캐릭터 스킬은 보여 주지 않음. 다른 캐릭터 스킬은 검색할 때만
+  const rest = [...new Set([...countSkills(() => true), ...(DATA.activeSkills || [])])].filter(t => !info[t] && !mine.includes(t));
   modal(`<h2>${esc(nick(n))} 스킬 선택${cls ? ` <span class="hint">· 클래스 ${esc(cls)}</span>` : ''}</h2>
     <p class="hint">누른 순서대로 들어가요. ${sk.list.length ? `스킬 목록은 나무위키 문서${sk.from !== n ? `(${esc(sk.from)} 문서 참고)` : ''} 기준이에요.` : '이 캐릭터는 스킬 목록이 아직 없어요.'} <a href="#" id="skImport">캐릭터 관리에서 스킬 고치기</a></p>
     <div class="kv"><b>선택됨</b> <span id="skPicked" class="chips" style="display:inline-flex;flex-wrap:wrap;margin-left:6px"></span></div>
@@ -764,7 +772,7 @@ function openSkillPicker(bi, n) {
     const order = ['고유', '핵심', '공통', '이벤트'];
     const typeKeys = Object.keys(byType).sort((a, b) => (order.indexOf(a) + 1 || 9) - (order.indexOf(b) + 1 || 9));
     $('skGroups').innerHTML = typeKeys.map(k => grp(`${esc(k || '기타')} 스킬`, byType[k])).join('')
-      + grp(`${esc(nick(n))} 사용 기록`, mine) + (cls ? grp(`같은 클래스(${esc(cls)})에서 쓰던 스킬`, sameCls) : '') + (q || !official.length ? grp(q ? '다른 스킬' : '다른 캐릭터들이 쓰던 스킬', rest) : '')
+      + grp(`${esc(nick(n))} 사용 기록`, mine) + (q ? grp('다른 스킬 (검색 결과)', rest) : '')
       || `<div class="hint">${q ? `Enter를 누르면 "${esc(q)}"을(를) 새 스킬로 추가해요` : '아직 기록된 스킬이 없어요. 위에 입력해서 추가하세요.'}</div>`;
   };
   $('skImport').onclick = e => { e.preventDefault(); openCharManager(n); };
