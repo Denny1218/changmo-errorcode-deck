@@ -1024,6 +1024,7 @@ function cmRenderList() {
   const s = el.querySelector('.sel'); if (s) s.scrollIntoView({ block: 'nearest' });
 }
 
+const MAX_ARTS = 4;   // 캐릭터마다 정해진 아티팩트 3~4개
 const tagList = (items, key) => items.map((v, i) => `<span class="tag">${esc(v)}<button data-rmtag="${key}" data-i="${i}" title="빼기">✕</button></span>`).join('');
 
 function cmRenderDetail() {
@@ -1044,14 +1045,17 @@ function cmRenderDetail() {
         <label>숨김</label><div><label class="hint"><input type="checkbox" data-f="hidden"${d.hidden ? ' checked' : ''}> 캐릭터 풀에서 숨기기 (안 쓰는 캐릭터)</label></div>
       </div></div>
     <div class="cm-sec"><h3>클래스 (전직 트리) <span class="src">${baseTierCount ? `${base.tiersFrom === 'namu' ? '나무위키' : '공지'} 기준 · 고치면 고친 값이 우선` : '공지·나무위키에 없음 · 직접 입력'}</span></h3>
-      ${TIER_KEYS.map(k => `<div class="tier-row"><span class="tl">${k.replace('Tier', '')}차</span><div>${tagList(d.tiers[k], k)}<input class="tagadd" data-add="${k}" placeholder="+ 추가 (Enter)"></div></div>`).join('')}
+      ${TIER_KEYS.map(k => `<div class="tier-row"><span class="tl">${k.replace('Tier', '')}차</span><div>${tagList(d.tiers[k], k)}<input class="tagadd" data-add="${k}" placeholder="클래스 이름"> <button class="sm" data-addbtn="${k}">추가</button></div></div>`).join('')}
       <div class="hint">장비표의 클래스 목록에는 3차가 먼저 나와요.</div></div>
     <div class="cm-sec"><h3>전용 무기 · 아티팩트</h3>
       <div class="cm-grid">
         <label>전용 무기</label><div><input type="text" data-f="weapon" value="${esc(d.weapon)}" style="width:220px"></div>
-        <label>아티팩트</label><div>${tagList(d.artifacts, 'art')}<input class="tagadd" data-add="art" placeholder="+ 추가 (Enter)" list="cmArtList"></div>
-      </div><datalist id="cmArtList">${(DATA.artifacts || []).map(a => `<option value="${esc(a)}">`).join('')}</datalist>
-      <div class="hint" style="margin-top:4px">장비표의 아티팩트 선택지가 이 목록이에요.</div></div>
+        <label>아티팩트</label><div>${tagList(d.artifacts, 'art')}
+          ${d.artifacts.length < MAX_ARTS ? `<select data-pick="art" style="max-width:200px"><option value="">+ 아티팩트 고르기 (${d.artifacts.length}/${MAX_ARTS})</option>
+            ${[...new Set(DATA.artifacts || [])].filter(a => !d.artifacts.includes(a)).sort((a, b) => a.localeCompare(b, 'ko')).map(a => `<option>${esc(a)}</option>`).join('')}
+            <option value="__custom">목록에 없는 이름 직접 입력…</option></select>` : `<span class="hint">${MAX_ARTS}개 다 채웠어요</span>`}</div>
+      </div>
+      <div class="hint" style="margin-top:4px">캐릭터마다 정해진 아티팩트 3~4개를 넣어 두세요. 장비표에서는 이 중에서 골라요.</div></div>
     <div class="cm-sec"><h3>스킬 <span class="src">${own ? '직접 고친 목록' : nsk.list.length ? `나무위키${nsk.from !== d.name ? ` (${esc(nsk.from)} 문서 참고)` : ''}` : '목록 없음 · 직접 입력'}</span></h3>
       <table class="sk-table"><tr><th style="width:24px"></th><th>스킬 이름</th><th style="width:96px">종류</th><th style="width:52px">TP</th><th style="width:170px">배우는 클래스</th><th style="width:30px"></th></tr>
       ${d.skills.map((s, i) => `<tr data-i="${i}"><td>${i ? '<button class="mv" data-mv="1" title="위로">▲</button>' : ''}</td>
@@ -1074,6 +1078,12 @@ function cmRenderDetail() {
       <div id="cmHist">${CM.hist ? cmHistHtml(CM.hist) : '<button id="cmHistLoad">기록 불러오기</button>'}</div></div>` : ''}`;
   const d2 = CM.draft;
   el.oninput = e => {
+    if (e.target.dataset.pick === 'art') {
+      let v = e.target.value; if (!v) return;
+      if (v === '__custom') v = (prompt('아티팩트 이름을 적어 주세요', '') || '').trim();
+      if (v && !d2.artifacts.includes(v) && d2.artifacts.length < MAX_ARTS) d2.artifacts.push(v);
+      cmRenderDetail(); return;
+    }
     const f = e.target.dataset.f;
     if (f) { d2[f] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; cmUpdateDirty(); return; }
     const tr = e.target.closest('tr[data-i]');
@@ -1086,13 +1096,17 @@ function cmRenderDetail() {
   };
   el.onchange = el.oninput;
   el.onkeydown = e => {
-    const k = e.target.dataset.add; if (!k || e.key !== 'Enter') return;
-    e.preventDefault(); const v = e.target.value.trim(); if (!v) return;
-    const arr = k === 'art' ? d2.artifacts : d2.tiers[k]; if (!arr.includes(v)) arr.push(v);
+    const k = e.target.dataset.add; if (!k || e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;   // 한글 조합 중 Enter 는 무시 (글자 확정 후 다시 Enter)
+    e.preventDefault(); addTag(k, e.target.value);
+  };
+  const addTag = (k, v) => {
+    v = v.trim(); if (!v) return;
+    if (!d2.tiers[k].includes(v)) d2.tiers[k].push(v);
     cmRenderDetail(); const again = $('cmDetail').querySelector(`[data-add="${k}"]`); if (again) again.focus();
   };
   el.onclick = e => {
     const t = e.target.closest('button,a'); if (!t) return;
+    if (t.dataset.addbtn) { addTag(t.dataset.addbtn, $('cmDetail').querySelector(`[data-add="${t.dataset.addbtn}"]`).value); return; }
     if (t.dataset.rmtag) { (t.dataset.rmtag === 'art' ? d2.artifacts : d2.tiers[t.dataset.rmtag]).splice(+t.dataset.i, 1); cmRenderDetail(); return; }
     if (t.dataset.rmsk != null) { d2.skills.splice(+t.dataset.rmsk, 1); cmRenderDetail(); return; }
     if (t.dataset.mv) { const i = +t.closest('tr').dataset.i; [d2.skills[i - 1], d2.skills[i]] = [d2.skills[i], d2.skills[i - 1]]; cmRenderDetail(); return; }
