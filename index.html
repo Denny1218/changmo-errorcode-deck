@@ -75,7 +75,7 @@ main{display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px;padding:14p
 table.lo{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
 table.lo th{background:#f7f8fa;color:var(--sub);font-weight:600;padding:4px 3px;border:1px solid var(--line2);text-align:center}
 table.lo td{border:1px solid var(--line2);padding:0;height:30px}
-table.lo td.nm{padding:0 5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.lo td.nm{padding:3px 5px;font-weight:600;word-break:keep-all;overflow-wrap:anywhere;line-height:1.25}
 table.lo td.ord{text-align:center;color:var(--sub)}
 table.lo input,table.lo select{border:none;border-radius:0;width:100%;height:29px;padding:0 4px;background:transparent;font-size:12px}
 table.lo input:focus,table.lo select:focus{outline:2px solid var(--accent);outline-offset:-2px;background:#fff}
@@ -97,6 +97,38 @@ table.lo tr.total td{background:#f7f8fa;font-weight:600;padding:0 5px}
 .modal{background:#fff;border-radius:10px;padding:16px;width:min(860px,94vw);max-height:86vh;overflow:auto}
 .modal.view{width:min(1220px,96vw)}
 table.lo.ro td{padding:4px 5px;height:auto;white-space:normal;word-break:keep-all}
+/* 글자만 있는 배치표 (게시판 글 보기·이미지): 칸마다 줄바꿈, 칸 너비는 내용에 맞춤 (한 칸 최대 220px) */
+.sbody{display:flex;flex-wrap:wrap;gap:12px;padding:10px;align-items:flex-start}
+.sboard{flex:none}
+.smemo{white-space:pre-wrap;margin-top:6px;width:334px;font-size:12px;color:var(--sub);word-break:keep-all;overflow-wrap:anywhere}
+.stable{flex:1 1 0;min-width:0;overflow-x:auto}
+table.st{border-collapse:collapse;font-size:12px}
+table.st th{background:#f7f8fa;color:var(--sub);font-weight:600;padding:4px 6px;border:1px solid var(--line2);white-space:nowrap}
+table.st td{border:1px solid var(--line2);padding:4px 6px;vertical-align:middle}
+table.st .c{max-width:220px;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;line-height:1.35}
+table.st td.nm{font-weight:600}
+table.st td.ord{text-align:center;color:var(--sub)}
+table.st td.num,table.st tr.total td{text-align:right}
+table.st tr.total td{background:#f7f8fa;font-weight:600}
+table.st td.gr{min-width:80px}
+table.st .bar{height:8px;background:var(--accent);border-radius:2px}
+.scards{display:none;flex:1 1 100%}
+.scard{border:1px solid var(--line2);border-radius:6px;padding:6px 8px;margin-bottom:6px;font-size:12px;line-height:1.45;word-break:keep-all;overflow-wrap:anywhere}
+.scard b{display:block;font-size:13px;margin-bottom:2px}
+.scard .k{display:inline-block;min-width:52px;color:var(--sub)}
+@media(max-width:640px){.sbody .stable{display:none}.sbody .scards{display:block}}
+/* 이미지용: 화면 밖에서 그림. 넓이는 내용에 맞춤. 휴대폰에서 찍어도 항상 표로 */
+.img-sheet .sbody .stable{display:block!important}
+.img-sheet .sbody .scards{display:none!important}
+.img-sheet{position:absolute;left:-30000px;top:0;background:#fff;padding:16px;width:max-content;min-width:1000px;max-width:2000px}
+.img-sheet .sbody{flex-wrap:nowrap}
+.img-sheet .stable{overflow:visible;flex:none}
+/* 편집 표의 글자 칸: 글이 길면 칸 안에서 줄바꿈 (입력칸은 위에 투명하게 겹쳐 두고, 누르면 보임) */
+table.lo td.tx{position:relative;vertical-align:top}
+table.lo td.tx .tv{min-height:29px;padding:7px 4px 5px;font-size:12px;line-height:1.3;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
+table.lo td.tx input,table.lo td.tx select{position:absolute;inset:0;height:100%;color:transparent;caret-color:transparent}
+table.lo td.tx input:focus{color:var(--text);caret-color:auto;background:#fff}
+table.lo td.tx select option,table.lo td.tx select optgroup{color:var(--text)}
 .modal.wide{width:min(1180px,96vw);height:88vh;max-height:88vh;display:flex;flex-direction:column;padding:0;overflow:hidden}
 .cm-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
 .cm-head h2{margin:0}
@@ -607,15 +639,15 @@ function renderBlocks() {
           const tiers = CHARS.get(n).tiers, cur = row.cls || '';
           const keys = Object.keys(tiers).sort().reverse();
           const all = keys.flatMap(k => tiers[k]);
-          h += `<td><select data-row="cls"><option value=""></option>${cur && !all.includes(cur) ? `<option selected>${esc(cur)}</option>` : ''}${keys.map(k => `<optgroup label="${esc(k)}">${tiers[k].map(o => `<option${o === cur ? ' selected' : ''}>${esc(o)}</option>`).join('')}</optgroup>`).join('')}<option value="__custom">직접 입력…</option></select></td>`;
+          h += `<td class="tx"><div class="tv">${esc(cur)}</div><select data-row="cls" title="${esc(cur)}"><option value=""></option>${cur && !all.includes(cur) ? `<option selected>${esc(cur)}</option>` : ''}${keys.map(k => `<optgroup label="${esc(k)}">${tiers[k].map(o => `<option${o === cur ? ' selected' : ''}>${esc(o)}</option>`).join('')}</optgroup>`).join('')}<option value="__custom">직접 입력…</option></select></td>`;
         }
         else if (f === 'art' && (CHARS.get(n) || {}).artifacts && CHARS.get(n).artifacts.length) {
           // 공지에 나온 이 캐릭터의 아티팩트만 고르기 (예전 줄임말 값은 그대로 보여 줌)
           const arts = CHARS.get(n).artifacts, cur = row.art || '';
           const opts = ['', ...arts, ...(cur && !arts.includes(cur) ? [cur] : [])];
-          h += `<td><select data-row="art">${opts.map(o => `<option value="${esc(o)}"${o === cur ? ' selected' : ''}>${esc(o)}</option>`).join('')}<option value="__custom">직접 입력…</option></select></td>`;
+          h += `<td class="tx"><div class="tv">${esc(cur)}</div><select data-row="art" title="${esc(cur)}">${opts.map(o => `<option value="${esc(o)}"${o === cur ? ' selected' : ''}>${esc(o)}</option>`).join('')}<option value="__custom">직접 입력…</option></select></td>`;
         }
-        else h += `<td><input type="text" data-row="${f}" value="${esc(row[f] || '')}" list="dl-${bi}-${i}-${f}"><datalist id="dl-${bi}-${i}-${f}">${suggestions(f, n).map(v => `<option value="${esc(v)}">`).join('')}</datalist></td>`;
+        else h += `<td class="tx"><div class="tv">${esc(row[f] || '')}</div><input type="text" data-row="${f}" value="${esc(row[f] || '')}" list="dl-${bi}-${i}-${f}"><datalist id="dl-${bi}-${i}-${f}">${suggestions(f, n).map(v => `<option value="${esc(v)}">`).join('')}</datalist></td>`;
       }
       h += `<td><div class="bar" style="width:${Math.round(((+row.dmg || 0) / maxD) * 100)}%"></div></td></tr>`;
     });
@@ -733,6 +765,8 @@ blocksEl.addEventListener('input', e => {
     render(); return;
   }
   setRow(b, n, f, v);
+  // 칸에 보이는 글자(줄바꿈되는 부분)도 같이 바꿈
+  const tv = e.target.parentNode.querySelector('.tv'); if (tv) { tv.textContent = v; e.target.title = v; }
 });
 function setRow(b, n, f, v) {
   b.rows[n] = b.rows[n] || {}; b.rows[n][f] = v;
@@ -1348,9 +1382,9 @@ function showPost(p, res, pw) {
   $('poBack').onclick = backToList;
   $('poDel').onclick = () => deletePostFlow(p, pw);
   $('poImg').onclick = async () => {
-    if (!window.html2canvas) { toast('이미지 기능을 불러오지 못했어요', true); return; }
-    const cv = await html2canvas($('poView'), { scale: 2, backgroundColor: '#ffffff', logging: false });
-    copyCanvas(cv, p.title);
+    const s = c.season || {};
+    const cv = await planCanvas(plan, (c.plan && c.plan.title) || p.title, s.allowed && s.allowed.length ? '입장: ' + s.allowed.join(' · ') : (p.season || ''));
+    if (cv) copyCanvas(cv, p.title);
   };
   $('poLoad').onclick = () => loadPostIntoEditor(p, c);
 }
@@ -1414,7 +1448,7 @@ function openPublish() {
     } catch (e) { $('pbOk').disabled = false; $('pbErr').textContent = '올리지 못했어요: ' + e.message; }
   };
 }
-// 게시판 글 미리보기 (편집 불가 배치표)
+// 글자만 있는 배치표 (게시판 글 보기 + 이미지 복사·저장). 모든 칸이 줄바꿈되고 칸 너비는 내용에 맞춰져서 잘리는 글자가 없음
 function staticPlanHtml(plan) {
   return (plan.blocks || []).map(b => {
     let g = '<div class="board">';
@@ -1425,12 +1459,34 @@ function staticPlanHtml(plan) {
       g += `<div class="cell ${n ? 'on' : 'seat-' + seat}" style="grid-row:${r + 1};grid-column:${c + 1}">${n ? esc(nick(n)) : ''}</div>`;
     }
     g += '</div>';
-    const rows = b.order.map((n, i) => { const row = b.rows[n] || {};
-      return `<tr><td class="ord">${i + 1}</td><td class="nm">${esc(nick(n))}</td>${FIELDS.map(([f]) => `<td>${esc(row[f] || '')}</td>`).join('')}</tr>`; }).join('');
+    const maxD = Math.max(1, ...b.order.map(n => +((b.rows[n] || {}).dmg) || 0));
+    let total = 0;
+    const cell = (v, cls) => `<td${cls ? ` class="${cls}"` : ''}><div class="c">${esc(v)}</div></td>`;
+    const rows = b.order.map((n, i) => {
+      const row = b.rows[n] || {}, d = +row.dmg || 0; total += d;
+      return `<tr><td class="ord">${i + 1}</td>${cell(nick(n), 'nm')}${FIELDS.map(([f]) => f === 'dmg' ? cell(d ? d.toLocaleString() : '', 'num') : cell(row[f] || '')).join('')}
+        <td class="gr"><div class="bar" style="width:${Math.round(d / maxD * 100)}%"></div></td></tr>`;
+    }).join('');
+    const sum = b.order.length && total ? `<tr class="total"><td colspan="${FIELDS.length + 1}">합계</td><td class="num">${total.toLocaleString()}</td><td></td></tr>` : '';
+    // 휴대폰처럼 좁은 화면에서는 표 대신 캐릭터마다 카드로 보여 줌
+    const cards = b.order.map((n, i) => { const row = b.rows[n] || {};
+      const items = FIELDS.filter(([f]) => row[f] !== '' && row[f] != null).map(([f, label]) => `<div><span class="k">${label}</span>${esc(f === 'dmg' ? (+row.dmg || 0).toLocaleString() : row[f])}</div>`).join('');
+      return `<div class="scard"><b>${i + 1}. ${esc(nick(n))}</b>${items}</div>`; }).join('')
+      + (sum ? `<div class="scard"><b>합계</b> ${total.toLocaleString()}</div>` : '');
     return `<div class="block"><div class="bhead"><span class="deckno">${b.deck}덱</span><b>${esc(b.label || '')}</b><span class="cnt">${b.order.length}/${MAX_PER_DECK}명</span></div>
-      <div class="bbody"><div>${g}${b.memo ? `<div class="hint" style="white-space:pre-wrap;margin-top:6px;width:334px">${esc(b.memo)}</div>` : ''}</div>
-      <div style="overflow-x:auto"><table class="lo ro"><tr><th style="width:34px">순서</th><th style="width:70px">캐릭터</th>${FIELDS.map(f => `<th style="width:${f[2]}px">${f[1]}</th>`).join('')}</tr>${rows}</table></div></div></div>`;
+      <div class="sbody"><div class="sboard">${g}${b.memo ? `<div class="smemo">${esc(b.memo)}</div>` : ''}</div>
+      <div class="stable"><table class="st"><tr><th>순서</th><th>캐릭터</th>${FIELDS.map(f => `<th>${f[1]}</th>`).join('')}<th>그래프</th></tr>${rows}${sum}</table></div><div class="scards">${cards}</div></div></div>`;
   }).join('') || '<div class="hint">배치가 비어 있어요.</div>';
+}
+// 이미지용: 화면 밖에 글자만 있는 표를 그려서 찍음 (창 크기·스크롤과 상관없이 전체가 나옴)
+async function planCanvas(plan, title, sub) {
+  if (!window.html2canvas) { toast('이미지 기능을 불러오지 못했어요 (인터넷 연결 확인)', true); return null; }
+  const el = document.createElement('div');
+  el.className = 'img-sheet';
+  el.innerHTML = `<div class="cap-head"><span class="t">${esc(title || '')}</span>${sub ? `<span class="s">${esc(sub)}</span>` : ''}</div>${staticPlanHtml(plan)}`;
+  document.body.appendChild(el);
+  try { return await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false, windowWidth: Math.max(1400, el.scrollWidth + 40) }); }
+  finally { el.remove(); }
 }
 function openAdmin() {
   if (!needOnline('관리자')) return;
@@ -1589,14 +1645,9 @@ $('btnBackup').onclick = () => {
 const today = () => { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`; };
 function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
 async function captureCanvas() {
-  if (!window.html2canvas) { toast('이미지 기능을 불러오지 못했어요 (인터넷 연결 확인)', true); return null; }
   document.activeElement && document.activeElement.blur();
-  document.querySelectorAll('.memo').forEach(t => t.classList.toggle('blank', !t.value.trim()));
-  document.body.classList.add('capturing');
-  document.querySelectorAll('.block.active').forEach(b => b.classList.remove('active'));
-  // 창 크기와 상관없이 항상 넓은 레이아웃(배치판 + 장비표 가로 배치)으로 캡처
-  try { return await html2canvas($('capture'), { scale: 2, backgroundColor: '#ffffff', logging: false, windowWidth: 1700 }); }
-  finally { document.body.classList.remove('capturing'); renderBlocks(); }
+  const plan = curPlan(); if (!plan) return null;
+  return planCanvas(plan, plan.title, $('capSub').textContent);
 }
 $('btnPng').onclick = async () => {
   const c = await captureCanvas(); if (!c) return;
