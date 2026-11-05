@@ -20,6 +20,13 @@ function Clean($html) {
 function OneLine($s) { return (($s -split "`n") -join ' ').Trim() }
 function Norm-Attr($s) { return (($s -replace '\s*[\[\(].*$', '').Trim() -replace '결청체', '결정체') }
 $ATTRS = '자유의 불꽃', '활력의 나무', '욕망의 그림자', '지성의 결정체', '신념의 빛'
+# 에러코드 보스 이름. 목록에 없는 새 보스는 "에러 코드 : 이름 …"의 첫 낱말로 잡음 (예: 에리히 그리마 → 에리히)
+function Get-Boss($s) {
+  foreach ($b in '아수라', '디에네', '에리히') { if ($s -match $b) { return $b } }
+  $m = [regex]::Match($s, '에러 ?코드\s*:\s*([가-힣]{2,})')
+  if ($m.Success) { return $m.Groups[1].Value }
+  return $null
+}
 
 # ---------- 1. 게시글 목록 + 본문 (캐시) ----------
 Write-Host '게시글 목록을 가져오는 중...'
@@ -152,7 +159,7 @@ foreach ($p in $posts) {
     $ln = $lines[$k]
     if ($ln -notmatch '에러 ?코드' -or $ln -notmatch '정보|진행') { continue }
     if ($ln -match '보상|셔플|개선|수정|현상') { continue }
-    $boss = if ($ln -match '아수라') { '아수라' } elseif ($ln -match '디에네') { '디에네' } else { continue }
+    $boss = Get-Boss $ln; if (-not $boss) { continue }
     $mode = if ($ln -match '기사단') { '기사단' } else { '개인' }
     $sn = ''; $m = [regex]::Match($ln, '시즌\s*(\d+)(-\d+)?|(\d+)\s*시즌|디에네\s*(\d+-\d+)'); if ($m.Success) { $sn = ($m.Groups[1].Value + $m.Groups[2].Value + $m.Groups[3].Value + $m.Groups[4].Value) }
     $block = @()
@@ -177,7 +184,7 @@ foreach ($p in $posts) {
   foreach ($t in $tables) {
     foreach ($row in $t.rows) {
       if ($row.Count -ge 2 -and $row[0] -match '에러 ?코드') {
-        $boss = if ($row[0] -match '아수라') { '아수라' } elseif ($row[0] -match '디에네') { '디에네' } else { $null }
+        $boss = Get-Boss $row[0]
         $mode = if ($row[0] -match '기사단') { '기사단' } else { '개인' }
         foreach ($s in $seasons) { if ($s.postId -eq $p.id -and $s.boss -eq $boss -and $s.mode -eq $mode) { $s.schedule = $row[1] } }
       }

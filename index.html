@@ -234,7 +234,7 @@ body.mode-home main,body.mode-home .edit-only,body:not(.mode-home) #home,body:no
   <div class="home-sec">
     <div class="home-sec-h"><h2>지난 글</h2><span class="sp"></span>
       <input type="text" id="homeQ" placeholder="제목·닉네임 검색" style="width:180px">
-      <select id="homeBoss"><option value="">전체</option><option>디에네</option><option>아수라</option></select></div>
+      <select id="homeBoss"><option value="">전체</option><option>디에네</option><option>아수라</option><option>에리히</option></select></div>
     <div id="homeOld"></div>
   </div>
   <p class="hint" style="text-align:center;margin:18px 0">덱 내용은 글 암호를 아는 사람만 열 수 있어요. 한 번 넣은 암호는 이 기기에 기억돼요.</p>
@@ -292,16 +292,32 @@ body.mode-home main,body.mode-home .edit-only,body:not(.mode-home) #home,body:no
 "use strict";
 const DATA = window.GENESIS_DATA || { characters: [], weapons: [], armors: [], accessories: [], seasons: [] };
 const STORE_KEY = 'genesis-deck-tool-v1';
-const ROWS = 5, COLS = 7, MAX_PER_DECK = 6;
-const BOSS_CELLS = [[0,2],[0,3],[0,4],[1,2],[1,3],[1,4]];
-// 보스별 배치 가능 자리 (행,열). 보스는 위쪽 가운데 3x2, 열 0~1 = 왼쪽, 5~6 = 오른쪽, 2~4 = 정면
+const MAX_PER_DECK = 6;
+// 보스별 배치판: 크기(rows x cols), 보스 자리(bossR 행 x bossC 열), 배치 가능 자리 (행,열)
 const grid = (rows, cols) => rows.flatMap(r => cols.map(c => [r, c]));
 const SEATS = {
-  // 양옆: 보스 아래쪽 행에 2칸씩(4자리) / 정면: 3칸 x 3행(9자리) → 13자리
-  '디에네': { side: grid([1], [0, 1, 5, 6]), front: grid([2, 3, 4], [2, 3, 4]) },
-  // 양옆: 2칸 x 2행씩(8자리) / 정면: 3칸 x 2행(6자리) → 14자리
-  '아수라': { side: grid([0, 1], [0, 1, 5, 6]), front: grid([2, 3], [2, 3, 4]) },
+  // 7열 판, 보스는 위쪽 가운데 3x2. 양옆: 보스 아래쪽 행에 2칸씩(4자리) / 정면: 3칸 x 3행(9자리) → 13자리
+  '디에네': { rows: 5, cols: 7, bossR: [0, 1], bossC: [2, 4], side: grid([1], [0, 1, 5, 6]), front: grid([2, 3, 4], [2, 3, 4]) },
+  // 7열 판. 양옆: 2칸 x 2행씩(8자리) / 정면: 3칸 x 2행(6자리) → 14자리
+  '아수라': { rows: 5, cols: 7, bossR: [0, 1], bossC: [2, 4], side: grid([0, 1], [0, 1, 5, 6]), front: grid([2, 3], [2, 3, 4]) },
+  // 4열 판, 보스는 위쪽 4x2. 양옆 자리 없음 / 정면: 4칸 x 4행 → 16자리
+  '에리히': { rows: 6, cols: 4, bossR: [0, 1], bossC: [0, 3], side: [], front: grid([2, 3, 4, 5], [0, 1, 2, 3]) },
 };
+const layoutOf = boss => SEATS[boss] || SEATS['디에네'];
+const isBossCell = (L, r, c) => r >= L.bossR[0] && r <= L.bossR[1] && c >= L.bossC[0] && c <= L.bossC[1];
+// 배치판의 칸 모양 (보스 칸은 하나로 합쳐서 보여 줌)
+const boardStyle = L => `grid-template-columns:repeat(${L.cols},46px);grid-template-rows:repeat(${L.rows},46px)`;
+const bossDiv = (L, name) => `<div class="boss" style="grid-row:${L.bossR[0] + 1}/${L.bossR[1] + 2};grid-column:${L.bossC[0] + 1}/${L.bossC[1] + 2}">${esc(name)}</div>`;
+// 보스를 바꿔서 판 모양이 달라지면, 새 판에서 놓을 수 없는 자리의 캐릭터를 빈 자리로 옮김
+function refitBlock(b) {
+  const keys = seatKeys(b.boss);
+  const stray = Object.keys(b.cells).filter(k => !keys.includes(k));
+  for (const k of stray) {
+    const n = b.cells[k]; delete b.cells[k];
+    const free = keys.find(x => !b.cells[x]);
+    if (free) b.cells[free] = n;
+  }
+}
 const HOT = SEATS;  // 보스 목록용
 function seatType(boss, r, c) {
   const s = SEATS[boss]; if (!s) return '';
@@ -607,10 +623,11 @@ function renderBlocks() {
       </div>
       <div class="bbody">
         <div>
-          <div class="board">`;
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-      if (BOSS_CELLS.some(([a, d]) => a === r && d === c)) {
-        if (r === 0 && c === 2) h += `<div class="boss">${esc(b.boss)}</div>`;
+          <div class="board" style="${boardStyle(layoutOf(b.boss))}">`;
+    const L = layoutOf(b.boss);
+    for (let r = 0; r < L.rows; r++) for (let c = 0; c < L.cols; c++) {
+      if (isBossCell(L, r, c)) {
+        if (r === L.bossR[0] && c === L.bossC[0]) h += bossDiv(L, b.boss);
         continue;
       }
       const k = r + ',' + c, n = b.cells[k], seat = seatType(b.boss, r, c);
@@ -755,7 +772,7 @@ blocksEl.addEventListener('click', e => {
 blocksEl.addEventListener('input', e => {
   const bl = e.target.closest('.block'); if (!bl) return;
   const b = curPlan().blocks[+bl.dataset.block];
-  if (e.target.dataset.f) { b[e.target.dataset.f] = e.target.value; if (e.target.dataset.f === 'boss') render(); touch(); return; }
+  if (e.target.dataset.f) { b[e.target.dataset.f] = e.target.value; if (e.target.dataset.f === 'boss') { refitBlock(b); render(); } touch(); return; }
   const f = e.target.dataset.row; if (!f) return;
   const n = e.target.closest('tr').dataset.char;
   let v = e.target.value;
@@ -915,7 +932,7 @@ $('btnCopyPrev').onclick = () => {
   if ($('cpBoard')) $('cpBoard').onclick = openBoard;
   $('modal').querySelectorAll('[data-copy]').forEach(btn => btn.onclick = () => {
     const src = S.plans[btn.dataset.copy], plan = curPlan();
-    plan.blocks = JSON.parse(JSON.stringify(src.blocks)).map(b => Object.assign(b, { boss: cur.boss }));
+    plan.blocks = JSON.parse(JSON.stringify(src.blocks)).map(b => { Object.assign(b, { boss: cur.boss }); refitBlock(b); return b; });
     activeBlock = 0; NEW_SEASON = null; touch(); closeModal(); render(); toast('지난 배치를 가져왔어요. 바뀐 부분만 고치면 돼요');
   });
 };
@@ -1451,9 +1468,10 @@ function openPublish() {
 // 글자만 있는 배치표 (게시판 글 보기 + 이미지 복사·저장). 모든 칸이 줄바꿈되고 칸 너비는 내용에 맞춰져서 잘리는 글자가 없음
 function staticPlanHtml(plan) {
   return (plan.blocks || []).map(b => {
-    let g = '<div class="board">';
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-      if (BOSS_CELLS.some(([a, d]) => a === r && d === c)) { if (r === 0 && c === 2) g += `<div class="boss">${esc(b.boss)}</div>`; continue; }
+    const L = layoutOf(b.boss);
+    let g = `<div class="board" style="${boardStyle(L)}">`;
+    for (let r = 0; r < L.rows; r++) for (let c = 0; c < L.cols; c++) {
+      if (isBossCell(L, r, c)) { if (r === L.bossR[0] && c === L.bossC[0]) g += bossDiv(L, b.boss); continue; }
       const n = b.cells[r + ',' + c], seat = seatType(b.boss, r, c);
       if (!seat && !n) { g += `<div class="cell void" style="grid-row:${r + 1};grid-column:${c + 1}"></div>`; continue; }
       g += `<div class="cell ${n ? 'on' : 'seat-' + seat}" style="grid-row:${r + 1};grid-column:${c + 1}">${n ? esc(nick(n)) : ''}</div>`;
@@ -1674,9 +1692,9 @@ $('btnXlsx').onclick = async () => {
     ws.mergeCells(r0, 2, r0, 8);
     Object.assign(ws.getCell(r0, 2), { value: `${b.deck}덱${b.label ? ` (${b.label})` : ''}`, font: { bold: true }, fill: fill('FFE9ECF1') });
     ['순서', '캐릭터', ...FIELDS.map(f => f[1])].forEach((t, i) => Object.assign(ws.getCell(r0, 9 + i), { value: t, font: { bold: true }, fill: fill('FFE9ECF1'), border, alignment: { horizontal: 'center' } }));
-    const g = r0 + 1;
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-      if (BOSS_CELLS.some(([a, d]) => a === r && d === c)) continue;
+    const g = r0 + 1, L = layoutOf(b.boss);
+    for (let r = 0; r < L.rows; r++) for (let c = 0; c < L.cols; c++) {
+      if (isBossCell(L, r, c)) continue;
       const seat = seatType(b.boss, r, c);
       if (!seat && !b.cells[r + ',' + c]) continue;
       const cell = ws.getCell(g + r, 2 + c), n = b.cells[r + ',' + c];
@@ -1684,16 +1702,16 @@ $('btnXlsx').onclick = async () => {
       if (n) { cell.value = nick(n); cell.fill = fill('FFDCE8FD'); cell.font = { bold: true }; }
       else cell.fill = fill(seat === 'front' ? 'FFFFF4CC' : 'FFE9F7EF');
     }
-    ws.mergeCells(g, 4, g + 1, 6);
-    Object.assign(ws.getCell(g, 4), { value: b.boss, font: { bold: true, color: { argb: 'FF9B1C1C' } }, fill: fill('FFFDE2E2'), alignment: { horizontal: 'center', vertical: 'middle' }, border });
+    ws.mergeCells(g + L.bossR[0], 2 + L.bossC[0], g + L.bossR[1], 2 + L.bossC[1]);
+    Object.assign(ws.getCell(g + L.bossR[0], 2 + L.bossC[0]), { value: b.boss, font: { bold: true, color: { argb: 'FF9B1C1C' } }, fill: fill('FFFDE2E2'), alignment: { horizontal: 'center', vertical: 'middle' }, border });
     b.order.forEach((n, i) => {
       const row = b.rows[n] || {};
       [i + 1, nick(n), ...FIELDS.map(([f]) => f === 'dmg' ? (row.dmg === '' || row.dmg == null ? null : +row.dmg) : row[f] || '')]
         .forEach((v, j) => Object.assign(ws.getCell(g + i, 9 + j), { value: v, border, alignment: { vertical: 'middle' } }));
     });
-    const memoRow = g + ROWS;
+    const memoRow = g + Math.max(L.rows, b.order.length);
     if (b.memo) { ws.mergeCells(memoRow, 2, memoRow, 8); Object.assign(ws.getCell(memoRow, 2), { value: b.memo, alignment: { wrapText: true, vertical: 'top' }, font: { size: 9, color: { argb: 'FF5F6672' } } }); ws.getRow(memoRow).height = 30; }
-    for (let r = g; r < g + ROWS; r++) ws.getRow(r).height = 22;
+    for (let r = g; r < memoRow; r++) ws.getRow(r).height = 22;
     r0 = memoRow + 2;
   }
   const buf = await wb.xlsx.writeBuffer();
